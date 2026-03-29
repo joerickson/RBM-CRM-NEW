@@ -126,14 +126,19 @@ DROP POLICY IF EXISTS "requests_manager_update"   ON customer_requests;
 DROP POLICY IF EXISTS "requests_rep_own"          ON customer_requests;
 
 -- ─── 6. New role-aware RLS policies ──────────────────────────
+-- Each block drops the policy immediately before creating it so that
+-- even a partial execution (e.g. running only section 6) cannot
+-- produce a 42710 duplicate-policy error.
 
 -- ── Customers ──
 -- Admins / managers see all records.
 -- Sales reps / account managers see only their assigned records.
+DROP POLICY IF EXISTS "customers_manager_all" ON customers;
 CREATE POLICY "customers_manager_all" ON customers
   FOR ALL
   USING (is_manager_or_admin());
 
+DROP POLICY IF EXISTS "customers_rep_own" ON customers;
 CREATE POLICY "customers_rep_own" ON customers
   FOR ALL
   USING (
@@ -144,10 +149,12 @@ CREATE POLICY "customers_rep_own" ON customers
 -- ── Customer Sites ──
 -- Access via the parent customer (join check via RLS on customers covers this,
 -- but we add explicit policies for direct queries).
+DROP POLICY IF EXISTS "sites_manager_all" ON customer_sites;
 CREATE POLICY "sites_manager_all" ON customer_sites
   FOR ALL
   USING (is_manager_or_admin());
 
+DROP POLICY IF EXISTS "sites_rep_own" ON customer_sites;
 CREATE POLICY "sites_rep_own" ON customer_sites
   FOR ALL
   USING (
@@ -160,10 +167,12 @@ CREATE POLICY "sites_rep_own" ON customer_sites
   );
 
 -- ── Customer Interactions ──
+DROP POLICY IF EXISTS "interactions_manager_all" ON customer_interactions;
 CREATE POLICY "interactions_manager_all" ON customer_interactions
   FOR ALL
   USING (is_manager_or_admin());
 
+DROP POLICY IF EXISTS "interactions_rep_own" ON customer_interactions;
 CREATE POLICY "interactions_rep_own" ON customer_interactions
   FOR ALL
   USING (
@@ -172,10 +181,12 @@ CREATE POLICY "interactions_rep_own" ON customer_interactions
   );
 
 -- ── Visits ──
+DROP POLICY IF EXISTS "visits_manager_all" ON visits;
 CREATE POLICY "visits_manager_all" ON visits
   FOR ALL
   USING (is_manager_or_admin());
 
+DROP POLICY IF EXISTS "visits_rep_own" ON visits;
 CREATE POLICY "visits_rep_own" ON visits
   FOR ALL
   USING (
@@ -184,10 +195,12 @@ CREATE POLICY "visits_rep_own" ON visits
   );
 
 -- ── Tasks ──
+DROP POLICY IF EXISTS "tasks_manager_all" ON tasks;
 CREATE POLICY "tasks_manager_all" ON tasks
   FOR ALL
   USING (is_manager_or_admin());
 
+DROP POLICY IF EXISTS "tasks_rep_own" ON tasks;
 CREATE POLICY "tasks_rep_own" ON tasks
   FOR ALL
   USING (
@@ -197,18 +210,22 @@ CREATE POLICY "tasks_rep_own" ON tasks
 
 -- ── Customer Requests ──
 -- Public insert (portal), staff read/update with role filter
+DROP POLICY IF EXISTS "requests_insert_anon" ON customer_requests;
 CREATE POLICY "requests_insert_anon" ON customer_requests
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "requests_manager_select" ON customer_requests;
 CREATE POLICY "requests_manager_select" ON customer_requests
   FOR SELECT
   USING (is_manager_or_admin());
 
+DROP POLICY IF EXISTS "requests_manager_update" ON customer_requests;
 CREATE POLICY "requests_manager_update" ON customer_requests
   FOR UPDATE
   USING (is_manager_or_admin());
 
 -- Reps can see requests linked to their own customers
+DROP POLICY IF EXISTS "requests_rep_own" ON customer_requests;
 CREATE POLICY "requests_rep_own" ON customer_requests
   FOR SELECT
   USING (
@@ -221,6 +238,7 @@ CREATE POLICY "requests_rep_own" ON customer_requests
   );
 
 -- ── Employees ──
+DROP POLICY IF EXISTS "employees_staff" ON employees;
 CREATE POLICY "employees_staff" ON employees
   FOR ALL
   USING (
@@ -235,6 +253,7 @@ CREATE POLICY "employees_staff" ON employees
 
 -- ── Events ──
 -- All authenticated staff can view/manage events
+DROP POLICY IF EXISTS "events_staff" ON events;
 CREATE POLICY "events_staff" ON events
   FOR ALL
   USING (
@@ -245,6 +264,7 @@ CREATE POLICY "events_staff" ON events
     )
   );
 
+DROP POLICY IF EXISTS "event_customers_staff" ON event_customers;
 CREATE POLICY "event_customers_staff" ON event_customers
   FOR ALL
   USING (
@@ -255,6 +275,7 @@ CREATE POLICY "event_customers_staff" ON event_customers
     )
   );
 
+DROP POLICY IF EXISTS "event_attendees_staff" ON event_attendees;
 CREATE POLICY "event_attendees_staff" ON event_attendees
   FOR ALL
   USING (
