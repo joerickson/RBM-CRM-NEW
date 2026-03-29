@@ -45,6 +45,7 @@ export async function getEventsForCustomer(customerId: string) {
 export async function getAtRiskByVisits(thresholdDays = 90) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - thresholdDays);
+  const cutoffStr = cutoff.toISOString();
 
   // Find active customers whose last completed visit is older than threshold
   // or who have never had a visit
@@ -57,7 +58,7 @@ export async function getAtRiskByVisits(thresholdDays = 90) {
     LEFT JOIN visits v ON v.customer_id = c.id AND v.status = 'completed'
     WHERE c.status IN ('active', 'at-risk')
     GROUP BY c.id
-    HAVING MAX(v.visit_date) IS NULL OR MAX(v.visit_date) < ${cutoff}
+    HAVING MAX(v.visit_date) IS NULL OR MAX(v.visit_date) < ${cutoffStr}::timestamptz
     ORDER BY last_visit_date ASC NULLS FIRST
     LIMIT 20
   `);
