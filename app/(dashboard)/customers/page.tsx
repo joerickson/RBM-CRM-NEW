@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Header } from "@/components/layout/header";
 import { getAllCustomers } from "@/server/queries/customers";
 import { CustomersClient } from "@/components/customers/customers-client";

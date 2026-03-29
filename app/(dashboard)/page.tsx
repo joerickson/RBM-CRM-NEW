@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Header } from "@/components/layout/header";
 import { getDashboardStats, getAtRiskCustomers } from "@/server/queries/dashboard";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";

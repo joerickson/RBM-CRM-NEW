@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Header } from "@/components/layout/header";
 import { getKanbanCustomers } from "@/server/queries/customers";
 import { SalesClient } from "@/components/sales/sales-client";
