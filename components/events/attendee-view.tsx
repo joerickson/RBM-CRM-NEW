@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Ticket, Car } from "lucide-react";
+import { Ticket, Car, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 
@@ -17,6 +17,8 @@ interface EventCustomer {
   attended: boolean | null;
   ticketsAssigned: number;
   parkingAssigned: number;
+  ticketsSent: boolean;
+  parkingSent: boolean;
   customer: {
     id: string;
     companyName: string;
@@ -32,6 +34,8 @@ interface EventAttendee {
   type: string;
   ticketsAssigned: number;
   parkingAssigned: number;
+  ticketsSent: boolean;
+  parkingSent: boolean;
 }
 
 interface Event {
@@ -49,9 +53,23 @@ interface Event {
   eventAttendees: EventAttendee[];
 }
 
+export type AttendeeEditEntry = {
+  id: string;
+  displayName: string;
+  name: string;
+  tickets: number;
+  parking: number;
+  ticketsSent: boolean;
+  parkingSent: boolean;
+  type: "customer" | "attendee" | "employee";
+  customerId?: string;
+};
+
 interface AttendeeViewProps {
   events: Event[];
   onEventClick?: (event: Event) => void;
+  onEditAttendee?: (attendee: AttendeeEditEntry, event: Event) => void;
+  onAddAttendee?: (event: Event) => void;
 }
 
 function getColorBadge(color: string) {
@@ -70,15 +88,12 @@ function getColorBadge(color: string) {
   return map[color] ?? "bg-gray-100 text-gray-700 border-gray-200";
 }
 
-type AttendeeEntry = {
-  displayName: string;
-  name: string;
-  tickets: number;
-  parking: number;
-  type: "customer" | "attendee" | "employee";
-};
-
-export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
+export function AttendeeView({
+  events,
+  onEventClick,
+  onEditAttendee,
+  onAddAttendee,
+}: AttendeeViewProps) {
   const sortedEvents = useMemo(
     () =>
       [...events].sort(
@@ -88,25 +103,30 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
   );
 
   // For each event, build a sorted list of attendee entries
-  const eventAttendeesList = useMemo<AttendeeEntry[][]>(() => {
+  const eventAttendeesList = useMemo<AttendeeEditEntry[][]>(() => {
     return sortedEvents.map((evt) => {
-      const entries: AttendeeEntry[] = [];
+      const entries: AttendeeEditEntry[] = [];
 
       for (const ec of evt.eventCustomers) {
         const contactName =
           ec.customer.primaryContactName ?? ec.customer.companyName;
         entries.push({
+          id: ec.id,
           name: contactName,
           displayName: `${contactName} — ${ec.customer.companyName}`,
           tickets: ec.ticketsAssigned,
           parking: ec.parkingAssigned,
+          ticketsSent: ec.ticketsSent ?? false,
+          parkingSent: ec.parkingSent ?? false,
           type: "customer",
+          customerId: ec.customerId,
         });
       }
 
       for (const ea of evt.eventAttendees) {
         const rowType = ea.type === "employee" ? "employee" : "attendee";
         entries.push({
+          id: ea.id,
           name: ea.name,
           displayName:
             rowType === "employee"
@@ -116,6 +136,8 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
               : ea.name,
           tickets: ea.ticketsAssigned,
           parking: ea.parkingAssigned,
+          ticketsSent: ea.ticketsSent ?? false,
+          parkingSent: ea.parkingSent ?? false,
           type: rowType,
         });
       }
@@ -222,41 +244,47 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
                   return (
                     <td
                       key={evt.id}
-                      className="border-r px-3 py-2 min-w-[220px] align-top"
+                      className="border-r px-0 py-0 min-w-[220px] align-top"
                     >
-                      <p className="text-sm font-medium truncate">
-                        {attendee.displayName}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs mt-1">
-                        <span className="flex items-center gap-0.5 text-blue-600">
-                          <Ticket className="h-3 w-3" />
-                          {attendee.tickets}
-                        </span>
-                        <span className="flex items-center gap-0.5 text-green-600">
-                          <Car className="h-3 w-3" />
-                          {attendee.parking}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                        <label className="flex items-center gap-1 cursor-default">
-                          <input
-                            type="checkbox"
-                            checked={evt.ticketsSent}
-                            readOnly
-                            className="h-3 w-3 accent-blue-600"
-                          />
-                          Tkts Sent
-                        </label>
-                        <label className="flex items-center gap-1 cursor-default">
-                          <input
-                            type="checkbox"
-                            checked={evt.parkingSent}
-                            readOnly
-                            className="h-3 w-3 accent-green-600"
-                          />
-                          Park Sent
-                        </label>
-                      </div>
+                      <button
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors rounded-sm group"
+                        onClick={() => onEditAttendee?.(attendee, evt)}
+                        title="Click to edit"
+                      >
+                        <p className="text-sm font-medium truncate group-hover:text-blue-700">
+                          {attendee.displayName}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs mt-1">
+                          <span className="flex items-center gap-0.5 text-blue-600">
+                            <Ticket className="h-3 w-3" />
+                            {attendee.tickets}
+                          </span>
+                          <span className="flex items-center gap-0.5 text-green-600">
+                            <Car className="h-3 w-3" />
+                            {attendee.parking}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                          <label className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={attendee.ticketsSent}
+                              readOnly
+                              className="h-3 w-3 accent-blue-600"
+                            />
+                            Tkts Sent
+                          </label>
+                          <label className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={attendee.parkingSent}
+                              readOnly
+                              className="h-3 w-3 accent-green-600"
+                            />
+                            Park Sent
+                          </label>
+                        </div>
+                      </button>
                     </td>
                   );
                 })}
@@ -264,6 +292,21 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
             ))
           )}
         </tbody>
+        <tfoot>
+          <tr className="border-t bg-gray-50/50">
+            {sortedEvents.map((evt) => (
+              <td key={evt.id} className="border-r px-3 py-2 min-w-[220px]">
+                <button
+                  className="w-full flex items-center gap-1.5 text-xs font-medium text-[#1B4F8A] hover:text-blue-700 hover:bg-blue-50 rounded-md px-2 py-1.5 transition-colors"
+                  onClick={() => onAddAttendee?.(evt)}
+                >
+                  <PlusCircle className="h-3.5 w-3.5 shrink-0" />
+                  Add Attendee
+                </button>
+              </td>
+            ))}
+          </tr>
+        </tfoot>
       </table>
     </div>
   );

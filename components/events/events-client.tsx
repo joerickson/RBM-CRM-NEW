@@ -24,7 +24,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EventFormDialog } from "./event-form-dialog";
 import { EventDetailDialog } from "./event-detail-dialog";
 import { CalendarView } from "./calendar-view";
-import { AttendeeView } from "./attendee-view";
+import { AttendeeView, type AttendeeEditEntry } from "./attendee-view";
+import { AddAttendeeDialog } from "./add-attendee-dialog";
+import { EditAttendeeDialog } from "./edit-attendee-dialog";
 import { deleteEvent } from "@/server/actions/events";
 import { toast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
@@ -43,6 +45,8 @@ interface EventCustomer {
   attended: boolean | null;
   ticketsAssigned: number;
   parkingAssigned: number;
+  ticketsSent: boolean;
+  parkingSent: boolean;
   notes: string | null;
   customer: {
     id: string;
@@ -62,6 +66,8 @@ interface EventAttendee {
   type: string;
   ticketsAssigned: number;
   parkingAssigned: number;
+  ticketsSent: boolean;
+  parkingSent: boolean;
 }
 
 interface Event {
@@ -148,6 +154,11 @@ export function EventsClient({
   const [showCreate, setShowCreate] = useState(false);
   const [editEvent, setEditEvent] = useState<Event | null>(null);
   const [detailEvent, setDetailEvent] = useState<Event | null>(null);
+  const [addAttendeeEvent, setAddAttendeeEvent] = useState<Event | null>(null);
+  const [editAttendeeData, setEditAttendeeData] = useState<{
+    attendee: AttendeeEditEntry;
+    event: Event;
+  } | null>(null);
   const router = useRouter();
 
   // Filter by company for events-only role
@@ -367,6 +378,10 @@ export function EventsClient({
           <AttendeeView
             events={visibleEvents as any}
             onEventClick={(e) => setDetailEvent(e as any)}
+            onEditAttendee={(attendee, event) =>
+              setEditAttendeeData({ attendee, event: event as Event })
+            }
+            onAddAttendee={(event) => setAddAttendeeEvent(event as Event)}
           />
         </TabsContent>
       </Tabs>
@@ -405,6 +420,34 @@ export function EventsClient({
           router.refresh();
         }}
       />
+
+      {addAttendeeEvent && (
+        <AddAttendeeDialog
+          open={!!addAttendeeEvent}
+          onClose={() => {
+            setAddAttendeeEvent(null);
+            router.refresh();
+          }}
+          eventId={addAttendeeEvent.id}
+          totalTickets={addAttendeeEvent.totalTickets}
+          totalParkingPasses={addAttendeeEvent.totalParkingPasses}
+        />
+      )}
+
+      {editAttendeeData && (
+        <EditAttendeeDialog
+          open={!!editAttendeeData}
+          onClose={() => {
+            setEditAttendeeData(null);
+            router.refresh();
+          }}
+          eventId={editAttendeeData.event.id}
+          eventName={editAttendeeData.event.name}
+          totalTickets={editAttendeeData.event.totalTickets}
+          totalParkingPasses={editAttendeeData.event.totalParkingPasses}
+          attendee={editAttendeeData.attendee}
+        />
+      )}
     </div>
   );
 }
