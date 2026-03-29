@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CheckCircle, Ticket, Car } from "lucide-react";
+import { Ticket, Car } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 
@@ -70,16 +70,15 @@ function getColorBadge(color: string) {
   return map[color] ?? "bg-gray-100 text-gray-700 border-gray-200";
 }
 
-type AttendeeRow = {
-  key: string;
-  name: string;
-  company: string | null;
+type AttendeeEntry = {
   displayName: string;
+  name: string;
+  tickets: number;
+  parking: number;
   type: "customer" | "attendee" | "employee";
 };
 
 export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
-  // Sort events chronologically (ASC by date)
   const sortedEvents = useMemo(
     () =>
       [...events].sort(
@@ -88,75 +87,47 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
     [events]
   );
 
-  // Build deduplicated list of all attendees across all events
-  const attendeeRows = useMemo<AttendeeRow[]>(() => {
-    const seen = new Map<string, AttendeeRow>();
+  // For each event, build a sorted list of attendee entries
+  const eventAttendeesList = useMemo<AttendeeEntry[][]>(() => {
+    return sortedEvents.map((evt) => {
+      const entries: AttendeeEntry[] = [];
 
-    for (const evt of sortedEvents) {
       for (const ec of evt.eventCustomers) {
-        const key = `customer-${ec.customerId}`;
-        if (!seen.has(key)) {
-          const contactName = ec.customer.primaryContactName ?? ec.customer.companyName;
-          const company = ec.customer.companyName;
-          seen.set(key, {
-            key,
-            name: contactName,
-            company,
-            displayName: `${contactName} — ${company}`,
-            type: "customer",
-          });
-        }
+        const contactName =
+          ec.customer.primaryContactName ?? ec.customer.companyName;
+        entries.push({
+          name: contactName,
+          displayName: `${contactName} — ${ec.customer.companyName}`,
+          tickets: ec.ticketsAssigned,
+          parking: ec.parkingAssigned,
+          type: "customer",
+        });
       }
+
       for (const ea of evt.eventAttendees) {
         const rowType = ea.type === "employee" ? "employee" : "attendee";
-        const key = `${rowType}-${ea.name}`;
-        if (!seen.has(key)) {
-          const displayName =
+        entries.push({
+          name: ea.name,
+          displayName:
             rowType === "employee"
               ? `${ea.name} — Employee`
               : ea.company
               ? `${ea.name} — ${ea.company}`
-              : ea.name;
-          seen.set(key, {
-            key,
-            name: ea.name,
-            company: ea.company ?? null,
-            displayName,
-            type: rowType,
-          });
-        }
+              : ea.name,
+          tickets: ea.ticketsAssigned,
+          parking: ea.parkingAssigned,
+          type: rowType,
+        });
       }
-    }
 
-    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [events]);
+      return entries.sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }, [sortedEvents]);
 
-  function getCellForAttendee(event: Event, row: AttendeeRow) {
-    if (row.type === "customer") {
-      const customerId = row.key.replace("customer-", "");
-      const ec = event.eventCustomers.find((c) => c.customerId === customerId);
-      if (!ec) return null;
-      return { tickets: ec.ticketsAssigned, parking: ec.parkingAssigned, attended: ec.attended };
-    } else {
-      const ea = event.eventAttendees.find(
-        (a) => a.name === row.name && (row.type === "employee" ? a.type === "employee" : a.type !== "employee")
-      );
-      if (!ea) return null;
-      return { tickets: ea.ticketsAssigned, parking: ea.parkingAssigned, attended: null };
-    }
-  }
-
-  function getAssignedTickets(event: Event) {
-    const fromCustomers = event.eventCustomers.reduce((s, ec) => s + (ec.ticketsAssigned ?? 0), 0);
-    const fromAttendees = event.eventAttendees.reduce((s, ea) => s + (ea.ticketsAssigned ?? 0), 0);
-    return fromCustomers + fromAttendees;
-  }
-
-  function getAssignedParking(event: Event) {
-    const fromCustomers = event.eventCustomers.reduce((s, ec) => s + (ec.parkingAssigned ?? 0), 0);
-    const fromAttendees = event.eventAttendees.reduce((s, ea) => s + (ea.parkingAssigned ?? 0), 0);
-    return fromCustomers + fromAttendees;
-  }
+  const maxRows = useMemo(
+    () => Math.max(0, ...eventAttendeesList.map((e) => e.length)),
+    [eventAttendeesList]
+  );
 
   if (sortedEvents.length === 0) {
     return (
@@ -166,37 +137,36 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
     );
   }
 
-  if (attendeeRows.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-        No attendees assigned to any events yet.
-      </div>
-    );
-  }
-
   return (
     <div className="overflow-x-auto border rounded-lg bg-white">
-      <table className="border-collapse" style={{ minWidth: `${200 + sortedEvents.length * 180}px` }}>
+      <table
+        className="border-collapse"
+        style={{ minWidth: `${sortedEvents.length * 220}px` }}
+      >
         <thead>
-          {/* Event header row */}
           <tr className="bg-gray-50 border-b">
-            <th className="sticky left-0 z-10 bg-gray-50 border-r px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[200px]">
-              Attendee
-            </th>
-            {sortedEvents.map((evt) => {
+            {sortedEvents.map((evt, colIdx) => {
               const color = evt.eventType?.color ?? "gray";
-              const assigned = getAssignedTickets(evt);
-              const assignedPark = getAssignedParking(evt);
+              const assignedTickets = eventAttendeesList[colIdx].reduce(
+                (s, a) => s + a.tickets,
+                0
+              );
+              const assignedParking = eventAttendeesList[colIdx].reduce(
+                (s, a) => s + a.parking,
+                0
+              );
               return (
                 <th
                   key={evt.id}
-                  className="border-r px-3 py-2 text-center min-w-[160px] max-w-[180px]"
+                  className="border-r px-3 py-2 text-left min-w-[220px] max-w-[260px]"
                 >
                   <button
                     className="w-full text-left"
                     onClick={() => onEventClick?.(evt)}
                   >
-                    <Badge className={`text-xs border mb-1 ${getColorBadge(color)}`}>
+                    <Badge
+                      className={`text-xs border mb-1 ${getColorBadge(color)}`}
+                    >
                       {evt.eventType?.name ?? evt.type}
                     </Badge>
                     <p className="text-xs font-semibold text-gray-900 truncate">
@@ -209,22 +179,14 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                         <span className="flex items-center gap-0.5">
                           <Ticket className="h-3 w-3" />
-                          {assigned}/{evt.totalTickets}
+                          {assignedTickets}/{evt.totalTickets}
                         </span>
                         <span className="flex items-center gap-0.5">
                           <Car className="h-3 w-3" />
-                          {assignedPark}/{evt.totalParkingPasses}
+                          {assignedParking}/{evt.totalParkingPasses}
                         </span>
                       </div>
                     )}
-                    <div className="flex gap-1 mt-1">
-                      {evt.ticketsSent && (
-                        <span className="text-xs bg-green-100 text-green-700 px-1 rounded">Tkts ✓</span>
-                      )}
-                      {evt.parkingSent && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">Park ✓</span>
-                      )}
-                    </div>
                   </button>
                 </th>
               );
@@ -232,82 +194,75 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
           </tr>
         </thead>
         <tbody>
-          {attendeeRows.map((row, rowIdx) => (
-            <tr
-              key={row.key}
-              className={`border-b hover:bg-gray-50 ${rowIdx % 2 === 0 ? "" : "bg-gray-50/50"}`}
-            >
-              <td className="sticky left-0 z-10 bg-inherit border-r px-4 py-3 min-w-[200px]">
-                <p className="text-sm font-medium truncate">{row.displayName}</p>
-                {row.type === "customer" && (
-                  <span className="text-xs text-blue-600 font-medium">Customer</span>
-                )}
-                {row.type === "employee" && (
-                  <span className="text-xs text-orange-600 font-medium">Employee</span>
-                )}
-                {row.type === "attendee" && (
-                  <span className="text-xs text-purple-600 font-medium">Guest</span>
-                )}
+          {maxRows === 0 ? (
+            <tr>
+              <td
+                colSpan={sortedEvents.length}
+                className="text-center py-8 text-muted-foreground text-sm"
+              >
+                No attendees assigned to any events yet.
               </td>
-              {sortedEvents.map((evt) => {
-                const cell = getCellForAttendee(evt, row);
-                return (
-                  <td
-                    key={evt.id}
-                    className="border-r px-3 py-2 text-center min-w-[160px]"
-                  >
-                    {cell ? (
-                      <div className="space-y-1">
-                        {cell.attended !== null && (
-                          <div className="flex justify-center">
-                            <CheckCircle
-                              className={`h-4 w-4 ${
-                                cell.attended ? "text-green-500" : "text-gray-300"
-                              }`}
-                            />
-                          </div>
-                        )}
-                        <div className="flex items-center justify-center gap-2 text-xs">
-                          {cell.tickets > 0 && (
-                            <span className="flex items-center gap-0.5 text-blue-600">
-                              <Ticket className="h-3 w-3" />
-                              {cell.tickets}
-                            </span>
-                          )}
-                          {cell.parking > 0 && (
-                            <span className="flex items-center gap-0.5 text-green-600">
-                              <Car className="h-3 w-3" />
-                              {cell.parking}
-                            </span>
-                          )}
-                          {cell.tickets === 0 && cell.parking === 0 && (
-                            <span className="text-green-600 font-medium text-xs">✓</span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-200 text-lg">—</span>
-                    )}
-                  </td>
-                );
-              })}
             </tr>
-          ))}
-          {/* Totals row */}
-          <tr className="bg-gray-100 border-t-2 font-semibold">
-            <td className="sticky left-0 z-10 bg-gray-100 border-r px-4 py-2 text-xs text-muted-foreground uppercase tracking-wider">
-              Totals
-            </td>
-            {sortedEvents.map((evt) => {
-              const total = evt.eventCustomers.length + evt.eventAttendees.length;
-              return (
-                <td key={evt.id} className="border-r px-3 py-2 text-center">
-                  <span className="text-sm font-bold text-gray-700">{total}</span>
-                  <span className="text-xs text-muted-foreground"> attendees</span>
-                </td>
-              );
-            })}
-          </tr>
+          ) : (
+            Array.from({ length: maxRows }, (_, rowIdx) => (
+              <tr
+                key={rowIdx}
+                className={`border-b ${rowIdx % 2 === 0 ? "" : "bg-gray-50/50"}`}
+              >
+                {sortedEvents.map((evt, colIdx) => {
+                  const attendee = eventAttendeesList[colIdx][rowIdx];
+                  if (!attendee) {
+                    return (
+                      <td
+                        key={evt.id}
+                        className="border-r px-3 py-2 min-w-[220px]"
+                      />
+                    );
+                  }
+                  return (
+                    <td
+                      key={evt.id}
+                      className="border-r px-3 py-2 min-w-[220px] align-top"
+                    >
+                      <p className="text-sm font-medium truncate">
+                        {attendee.displayName}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs mt-1">
+                        <span className="flex items-center gap-0.5 text-blue-600">
+                          <Ticket className="h-3 w-3" />
+                          {attendee.tickets}
+                        </span>
+                        <span className="flex items-center gap-0.5 text-green-600">
+                          <Car className="h-3 w-3" />
+                          {attendee.parking}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <label className="flex items-center gap-1 cursor-default">
+                          <input
+                            type="checkbox"
+                            checked={evt.ticketsSent}
+                            readOnly
+                            className="h-3 w-3 accent-blue-600"
+                          />
+                          Tkts Sent
+                        </label>
+                        <label className="flex items-center gap-1 cursor-default">
+                          <input
+                            type="checkbox"
+                            checked={evt.parkingSent}
+                            readOnly
+                            className="h-3 w-3 accent-green-600"
+                          />
+                          Park Sent
+                        </label>
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
