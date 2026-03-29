@@ -13,6 +13,7 @@ import {
   Building2,
   LogOut,
   PartyPopper,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/events", label: "Events", icon: PartyPopper },
   { href: "/employees", label: "Employees", icon: UserCheck },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/email-templates", label: "Email Templates", icon: Mail },
   { href: "/admin", label: "Admin", icon: Settings },
 ];
 

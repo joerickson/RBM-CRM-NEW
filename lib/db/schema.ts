@@ -366,6 +366,58 @@ export const eventAttendees = pgTable("event_attendees", {
     .defaultNow(),
 });
 
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "contract-renewal",
+  "at-risk",
+  "task-assigned",
+  "request-submitted",
+  "visit-scheduled",
+  "health-score-drop",
+  "general",
+]);
+
+export const emailTemplates = pgTable("email_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  category: text("category").notNull().default("general"),
+  createdById: uuid("created_by_id").references(() => profiles.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    type: notificationTypeEnum("type").notNull().default("general"),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    link: text("link"),
+    read: boolean("read").notNull().default(false),
+    customerId: uuid("customer_id").references(() => customers.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    profileIdx: index("notifications_profile_idx").on(table.profileId),
+    readIdx: index("notifications_read_idx").on(table.read),
+  })
+);
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const profilesRelations = relations(profiles, ({ many }) => ({
@@ -493,5 +545,23 @@ export const eventAttendeesRelations = relations(eventAttendees, ({ one }) => ({
   profile: one(profiles, {
     fields: [eventAttendees.profileId],
     references: [profiles.id],
+  }),
+}));
+
+export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
+  createdBy: one(profiles, {
+    fields: [emailTemplates.createdById],
+    references: [profiles.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [notifications.profileId],
+    references: [profiles.id],
+  }),
+  customer: one(customers, {
+    fields: [notifications.customerId],
+    references: [customers.id],
   }),
 }));

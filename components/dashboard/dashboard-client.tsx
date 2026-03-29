@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DashboardStats, AIActionPlan } from "@/types";
 import { formatCurrency, BRAND_LABELS, getRiskColor } from "@/lib/utils";
+import { ContractRenewalsWidget } from "./contract-renewals-widget";
 
 interface StatCardProps {
   title: string;
@@ -231,6 +232,11 @@ export function DashboardClient({ stats, atRiskCustomers }: DashboardClientProps
             )}
           </CardContent>
         </Card>
+
+        {/* Contract Renewals */}
+        <div className="col-span-1 lg:col-span-2">
+          <ContractRenewalsWidget />
+        </div>
 
         {/* At-Risk Customers */}
         <Card className="col-span-1">

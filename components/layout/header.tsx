@@ -4,6 +4,8 @@ import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { GlobalSearch } from "./global-search";
+import { NotificationBell } from "./notification-bell";
 
 interface HeaderProps {
   title: string;
@@ -32,6 +34,8 @@ export async function Header({ title }: HeaderProps) {
     <header className="flex h-16 items-center justify-between border-b bg-white px-6">
       <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
       <div className="flex items-center gap-3">
+        <GlobalSearch />
+        {profile?.id && <NotificationBell profileId={profile.id} />}
         <Badge variant="outline" className="capitalize">
           {profile?.role ?? "loading"}
         </Badge>
