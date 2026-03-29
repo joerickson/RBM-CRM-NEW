@@ -8,7 +8,7 @@ export const loginSchema = z.object({
 export const customerSchema = z.object({
   brand: z.enum(["rbm-services", "double-take", "five-star"]),
   companyName: z.string().min(1, "Company name is required"),
-  status: z.enum(["lead", "prospect", "active", "at-risk", "churned"]),
+  status: z.string().min(1, "Status is required"),
   stage: z
     .enum([
       "new-lead",
@@ -50,7 +50,7 @@ export const taskSchema = z.object({
 
 export const interactionSchema = z.object({
   customerId: z.string().uuid("Customer is required"),
-  type: z.enum(["call", "email", "meeting", "demo", "proposal", "follow-up", "other"]),
+  type: z.string().min(1, "Type is required"),
   subject: z.string().min(1, "Subject is required"),
   notes: z.string().optional().nullable(),
   outcome: z.string().optional().nullable(),

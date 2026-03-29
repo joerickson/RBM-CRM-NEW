@@ -26,16 +26,27 @@ import { Customer } from "@/types";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 
+interface LookupItem {
+  id: string;
+  name: string;
+}
+
 interface CustomerFormDialogProps {
   open: boolean;
   onClose: () => void;
   customer?: Customer;
+  customerStatuses?: LookupItem[];
+  industries?: LookupItem[];
+  visitFrequencies?: LookupItem[];
 }
 
 export function CustomerFormDialog({
   open,
   onClose,
   customer,
+  customerStatuses = [],
+  industries = [],
+  visitFrequencies = [],
 }: CustomerFormDialogProps) {
   const [loading, setLoading] = useState(false);
 
@@ -127,11 +138,21 @@ export function CustomerFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="prospect">Prospect</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="at-risk">At Risk</SelectItem>
-                  <SelectItem value="churned">Churned</SelectItem>
+                  {customerStatuses.length > 0 ? (
+                    customerStatuses.map((s) => (
+                      <SelectItem key={s.id} value={s.name}>
+                        {s.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="prospect">Prospect</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="at-risk">At Risk</SelectItem>
+                      <SelectItem value="churned">Churned</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -160,7 +181,26 @@ export function CustomerFormDialog({
 
             <div>
               <Label>Industry</Label>
-              <Input {...form.register("industry")} placeholder="Healthcare, Office, etc." />
+              {industries.length > 0 ? (
+                <Select
+                  value={form.watch("industry") ?? ""}
+                  onValueChange={(v) => form.setValue("industry" as any, v || null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Not set</SelectItem>
+                    {industries.map((ind) => (
+                      <SelectItem key={ind.id} value={ind.name}>
+                        {ind.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input {...form.register("industry")} placeholder="Healthcare, Office, etc." />
+              )}
             </div>
 
             <div>
@@ -215,13 +255,23 @@ export function CustomerFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Not set</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="bi-annual">Bi-annual</SelectItem>
-                  <SelectItem value="annual">Annual</SelectItem>
-                  <SelectItem value="as-needed">As needed</SelectItem>
+                  {visitFrequencies.length > 0 ? (
+                    visitFrequencies.map((vf) => (
+                      <SelectItem key={vf.id} value={vf.name}>
+                        {vf.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="bi-annual">Bi-annual</SelectItem>
+                      <SelectItem value="annual">Annual</SelectItem>
+                      <SelectItem value="as-needed">As needed</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

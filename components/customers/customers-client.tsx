@@ -27,11 +27,24 @@ import {
 import { CustomerFormDialog } from "./customer-form-dialog";
 import { BulkImportDialog } from "./bulk-import-dialog";
 
-interface CustomersClientProps {
-  initialCustomers: Customer[];
+interface LookupItem {
+  id: string;
+  name: string;
 }
 
-export function CustomersClient({ initialCustomers }: CustomersClientProps) {
+interface CustomersClientProps {
+  initialCustomers: Customer[];
+  customerStatuses?: LookupItem[];
+  industries?: LookupItem[];
+  visitFrequencies?: LookupItem[];
+}
+
+export function CustomersClient({
+  initialCustomers,
+  customerStatuses = [],
+  industries = [],
+  visitFrequencies = [],
+}: CustomersClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -69,11 +82,21 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="lead">Lead</SelectItem>
-            <SelectItem value="prospect">Prospect</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="at-risk">At Risk</SelectItem>
-            <SelectItem value="churned">Churned</SelectItem>
+            {customerStatuses.length > 0 ? (
+              customerStatuses.map((s) => (
+                <SelectItem key={s.id} value={s.name}>
+                  {s.name}
+                </SelectItem>
+              ))
+            ) : (
+              <>
+                <SelectItem value="lead">Lead</SelectItem>
+                <SelectItem value="prospect">Prospect</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="at-risk">At Risk</SelectItem>
+                <SelectItem value="churned">Churned</SelectItem>
+              </>
+            )}
           </SelectContent>
         </Select>
         <Select value={brandFilter} onValueChange={setBrandFilter}>
@@ -186,6 +209,9 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
           setShowForm(false);
           router.refresh();
         }}
+        customerStatuses={customerStatuses}
+        industries={industries}
+        visitFrequencies={visitFrequencies}
       />
       <BulkImportDialog
         open={showImport}

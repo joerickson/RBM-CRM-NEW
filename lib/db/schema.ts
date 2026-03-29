@@ -125,7 +125,7 @@ export const customers = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     brand: brandEnum("brand").notNull().default("rbm-services"),
     companyName: text("company_name").notNull(),
-    status: customerStatusEnum("status").notNull().default("lead"),
+    status: text("status").notNull().default("lead"),
     stage: salesStageEnum("stage"),
     industry: text("industry"),
     address: text("address"),
@@ -240,7 +240,7 @@ export const customerInteractions = pgTable(
     repId: uuid("rep_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    type: interactionTypeEnum("type").notNull(),
+    type: text("type").notNull(),
     subject: text("subject").notNull(),
     notes: text("notes"),
     outcome: text("outcome"),
@@ -318,6 +318,48 @@ export const tasks = pgTable(
     assignedToIdx: index("tasks_assigned_idx").on(table.assignedToId),
   })
 );
+
+// ─── Lookup Tables (admin-managed dropdown options) ──────────────────────────
+
+export const companies = pgTable("companies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const customerStatuses = pgTable("customer_statuses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const industries = pgTable("industries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const visitFrequencies = pgTable("visit_frequencies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const interactionTypes = pgTable("interaction_types", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // ─── Event Types (dynamic, admin-managed) ─────────────────────────────────────
 

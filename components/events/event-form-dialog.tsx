@@ -54,16 +54,16 @@ interface EventFormDialogProps {
     notes: string | null;
   };
   eventTypes?: EventType[];
+  companies?: { id: string; name: string }[];
   repId?: string;
 }
-
-const COMPANIES = ["RBM Services", "TruCo", "Alpine", "DT"];
 
 export function EventFormDialog({
   open,
   onClose,
   event,
   eventTypes = [],
+  companies = [],
   repId,
 }: EventFormDialogProps) {
   const [saving, setSaving] = useState(false);
@@ -222,9 +222,9 @@ export function EventFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— None —</SelectItem>
-                  {COMPANIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>
+                      {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

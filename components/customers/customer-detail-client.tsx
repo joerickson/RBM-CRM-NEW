@@ -79,6 +79,10 @@ interface CustomerDetailClientProps {
     location: string | null;
     type: string;
   }>;
+  interactionTypes?: { id: string; name: string }[];
+  customerStatuses?: { id: string; name: string }[];
+  industries?: { id: string; name: string }[];
+  visitFrequencies?: { id: string; name: string }[];
 }
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -105,6 +109,10 @@ export function CustomerDetailClient({
   customer,
   repId,
   allEvents = [],
+  interactionTypes = [],
+  customerStatuses = [],
+  industries = [],
+  visitFrequencies = [],
 }: CustomerDetailClientProps) {
   const [showEdit, setShowEdit] = useState(false);
   const [showLogInteraction, setShowLogInteraction] = useState(false);
@@ -680,6 +688,9 @@ export function CustomerDetailClient({
           router.refresh();
         }}
         customer={customer}
+        customerStatuses={customerStatuses}
+        industries={industries}
+        visitFrequencies={visitFrequencies}
       />
 
       {repId && (
@@ -691,6 +702,7 @@ export function CustomerDetailClient({
           }}
           customerId={customer.id}
           repId={repId}
+          interactionTypes={interactionTypes}
         />
       )}
 
