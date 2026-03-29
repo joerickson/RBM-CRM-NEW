@@ -5,8 +5,8 @@ import { DashboardStats } from "@/types";
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const today = new Date();
-  const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+  const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+  const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
 
   const [
     totalCustomersResult,
