@@ -96,6 +96,8 @@ export const profiles = pgTable("profiles", {
   email: text("email").notNull().unique(),
   fullName: text("full_name"),
   role: userRoleEnum("role").notNull().default("sales"),
+  permissions: text("permissions").array(),
+  status: text("status").notNull().default("active"),
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at", { withTimezone: true })

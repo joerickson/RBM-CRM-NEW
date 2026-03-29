@@ -1,17 +1,13 @@
+"use server";
+
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function syncClerkUser() {
+export async function syncClerkUserToSupabase() {
   const user = await currentUser();
   if (!user) return null;
-
-  const existing = await db.query.profiles.findFirst({
-    where: eq(profiles.clerkId, user.id),
-  });
-
-  if (existing) return existing;
 
   const role =
     (user.publicMetadata?.role as
@@ -21,16 +17,32 @@ export async function syncClerkUser() {
       | "customer"
       | undefined) ?? "sales";
 
-  const [created] = await db
+  const email = user.emailAddresses[0]?.emailAddress ?? "";
+  const fullName =
+    [user.firstName, user.lastName].filter(Boolean).join(" ") || null;
+
+  const [profile] = await db
     .insert(profiles)
     .values({
       clerkId: user.id,
-      email: user.emailAddresses[0]?.emailAddress ?? "",
-      fullName: [user.firstName, user.lastName].filter(Boolean).join(" ") || null,
+      email,
+      fullName,
       role,
+      permissions: [role],
+      status: "active",
     })
-    .onConflictDoNothing()
+    .onConflictDoUpdate({
+      target: profiles.clerkId,
+      set: {
+        email,
+        fullName,
+        role,
+        permissions: [role],
+        status: "active",
+        updatedAt: new Date(),
+      },
+    })
     .returning();
 
-  return created ?? null;
+  return profile ?? null;
 }
