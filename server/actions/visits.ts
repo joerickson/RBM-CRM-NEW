@@ -18,7 +18,7 @@ export async function createVisit(data: z.infer<typeof visitSchema>) {
       .insert(visits)
       .values({
         ...validated.data,
-        visitDate: new Date(validated.data.visitDate).toISOString(),
+        visitDate: new Date(validated.data.visitDate),
         customerRating: validated.data.customerRating ?? null,
       })
       .returning();
@@ -37,7 +37,7 @@ export async function updateVisit(id: string, data: Partial<z.infer<typeof visit
       .update(visits)
       .set({
         ...data,
-        visitDate: data.visitDate ? new Date(data.visitDate).toISOString() : undefined,
+        visitDate: data.visitDate ? new Date(data.visitDate) : undefined,
       })
       .where(eq(visits.id, id))
       .returning();

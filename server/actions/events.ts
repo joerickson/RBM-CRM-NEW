@@ -21,7 +21,7 @@ export async function createEvent(
       .insert(events)
       .values({
         ...validated.data,
-        date: new Date(validated.data.date).toISOString(),
+        date: new Date(validated.data.date),
         createdById: createdById ?? null,
       })
       .returning();
@@ -43,8 +43,8 @@ export async function updateEvent(
       .update(events)
       .set({
         ...data,
-        date: data.date ? new Date(data.date).toISOString() : undefined,
-        updatedAt: new Date().toISOString(),
+        date: data.date ? new Date(data.date) : undefined,
+        updatedAt: new Date(),
       })
       .where(eq(events.id, id))
       .returning();
