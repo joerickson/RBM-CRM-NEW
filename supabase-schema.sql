@@ -1,26 +1,49 @@
 -- ============================================================
 -- RBM CRM — Supabase Schema SQL
 -- Copy and paste this into Supabase SQL Editor
+-- Safe to re-run (idempotent)
 -- ============================================================
 
 -- ─── Extensions ─────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── Enums ──────────────────────────────────────────────────
-CREATE TYPE user_role AS ENUM ('admin', 'sales', 'building-ops', 'customer');
-CREATE TYPE brand AS ENUM ('rbm-services', 'double-take', 'five-star');
-CREATE TYPE customer_status AS ENUM ('lead', 'prospect', 'active', 'at-risk', 'churned');
-CREATE TYPE sales_stage AS ENUM ('new-lead', 'contacted', 'qualified', 'proposal-sent', 'negotiating', 'closed-won', 'closed-lost');
-CREATE TYPE task_status AS ENUM ('todo', 'in-progress', 'done', 'cancelled');
-CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
-CREATE TYPE request_status AS ENUM ('open', 'in-review', 'resolved', 'closed');
-CREATE TYPE interaction_type AS ENUM ('call', 'email', 'meeting', 'demo', 'proposal', 'follow-up', 'other');
-CREATE TYPE visit_status AS ENUM ('scheduled', 'completed', 'missed', 'cancelled');
-CREATE TYPE employee_status AS ENUM ('active', 'inactive');
-CREATE TYPE event_type AS ENUM ('delta-center', 'theater', 'golf', 'dinner', 'client-appreciation', 'conference', 'other');
+-- Using DO blocks so this script is safe to re-run (PostgreSQL has no CREATE TYPE IF NOT EXISTS)
+DO $$ BEGIN CREATE TYPE user_role AS ENUM ('admin', 'sales', 'building-ops', 'customer');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE brand AS ENUM ('rbm-services', 'double-take', 'five-star');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE customer_status AS ENUM ('lead', 'prospect', 'active', 'at-risk', 'churned');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE sales_stage AS ENUM ('new-lead', 'contacted', 'qualified', 'proposal-sent', 'negotiating', 'closed-won', 'closed-lost');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE task_status AS ENUM ('todo', 'in-progress', 'done', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE request_status AS ENUM ('open', 'in-review', 'resolved', 'closed');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE interaction_type AS ENUM ('call', 'email', 'meeting', 'demo', 'proposal', 'follow-up', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE visit_status AS ENUM ('scheduled', 'completed', 'missed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE employee_status AS ENUM ('active', 'inactive');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN CREATE TYPE event_type AS ENUM ('delta-center', 'theater', 'golf', 'dinner', 'client-appreciation', 'conference', 'other');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ─── Profiles ───────────────────────────────────────────────
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email       TEXT NOT NULL UNIQUE,
   full_name   TEXT,
@@ -46,12 +69,13 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- ─── Customers ──────────────────────────────────────────────
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
   id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   brand                   brand NOT NULL DEFAULT 'rbm-services',
   company_name            TEXT NOT NULL,
@@ -81,13 +105,13 @@ CREATE TABLE customers (
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX customers_status_idx ON customers(status);
-CREATE INDEX customers_stage_idx ON customers(stage);
-CREATE INDEX customers_brand_idx ON customers(brand);
-CREATE INDEX customers_assigned_rep_idx ON customers(assigned_rep_id);
+CREATE INDEX IF NOT EXISTS customers_status_idx ON customers(status);
+CREATE INDEX IF NOT EXISTS customers_stage_idx ON customers(stage);
+CREATE INDEX IF NOT EXISTS customers_brand_idx ON customers(brand);
+CREATE INDEX IF NOT EXISTS customers_assigned_rep_idx ON customers(assigned_rep_id);
 
 -- ─── Customer Sites ──────────────────────────────────────────
-CREATE TABLE customer_sites (
+CREATE TABLE IF NOT EXISTS customer_sites (
   id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id      UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   site_name        TEXT NOT NULL,
@@ -102,7 +126,7 @@ CREATE TABLE customer_sites (
 );
 
 -- ─── Employees ──────────────────────────────────────────────
-CREATE TABLE employees (
+CREATE TABLE IF NOT EXISTS employees (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   full_name   TEXT NOT NULL,
   email       TEXT,
@@ -117,7 +141,7 @@ CREATE TABLE employees (
 );
 
 -- ─── Visits ─────────────────────────────────────────────────
-CREATE TABLE visits (
+CREATE TABLE IF NOT EXISTS visits (
   id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id      UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   site_id          UUID REFERENCES customer_sites(id) ON DELETE SET NULL,
@@ -130,11 +154,11 @@ CREATE TABLE visits (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX visits_customer_idx ON visits(customer_id);
-CREATE INDEX visits_date_idx ON visits(visit_date);
+CREATE INDEX IF NOT EXISTS visits_customer_idx ON visits(customer_id);
+CREATE INDEX IF NOT EXISTS visits_date_idx ON visits(visit_date);
 
 -- ─── Customer Interactions ──────────────────────────────────
-CREATE TABLE customer_interactions (
+CREATE TABLE IF NOT EXISTS customer_interactions (
   id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id          UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   rep_id               UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -147,11 +171,11 @@ CREATE TABLE customer_interactions (
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX interactions_customer_idx ON customer_interactions(customer_id);
-CREATE INDEX interactions_rep_idx ON customer_interactions(rep_id);
+CREATE INDEX IF NOT EXISTS interactions_customer_idx ON customer_interactions(customer_id);
+CREATE INDEX IF NOT EXISTS interactions_rep_idx ON customer_interactions(rep_id);
 
 -- ─── Customer Requests ──────────────────────────────────────
-CREATE TABLE customer_requests (
+CREATE TABLE IF NOT EXISTS customer_requests (
   id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_id      UUID REFERENCES customers(id) ON DELETE SET NULL,
   customer_email   TEXT NOT NULL,
@@ -166,10 +190,10 @@ CREATE TABLE customer_requests (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX requests_status_idx ON customer_requests(status);
+CREATE INDEX IF NOT EXISTS requests_status_idx ON customer_requests(status);
 
 -- ─── Tasks ──────────────────────────────────────────────────
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title           TEXT NOT NULL,
   description     TEXT,
@@ -184,11 +208,11 @@ CREATE TABLE tasks (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX tasks_status_idx ON tasks(status);
-CREATE INDEX tasks_assigned_idx ON tasks(assigned_to_id);
+CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status);
+CREATE INDEX IF NOT EXISTS tasks_assigned_idx ON tasks(assigned_to_id);
 
 -- ─── Events ─────────────────────────────────────────────────
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name          TEXT NOT NULL,
   date          TIMESTAMPTZ NOT NULL,
@@ -201,7 +225,7 @@ CREATE TABLE events (
 );
 
 -- ─── Event Customers (many-to-many) ─────────────────────────
-CREATE TABLE event_customers (
+CREATE TABLE IF NOT EXISTS event_customers (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   event_id    UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -211,7 +235,7 @@ CREATE TABLE event_customers (
 );
 
 -- ─── Event Attendees ─────────────────────────────────────────
-CREATE TABLE event_attendees (
+CREATE TABLE IF NOT EXISTS event_attendees (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   event_id    UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   profile_id  UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -238,6 +262,25 @@ CREATE OR REPLACE FUNCTION get_user_role()
 RETURNS user_role LANGUAGE sql SECURITY DEFINER AS $$
   SELECT role FROM profiles WHERE id = auth.uid();
 $$;
+
+-- ─── RLS Policies ────────────────────────────────────────────
+-- Drop existing policies first so re-runs don't error
+DROP POLICY IF EXISTS "profiles_select" ON profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON profiles;
+DROP POLICY IF EXISTS "profiles_admin_all" ON profiles;
+DROP POLICY IF EXISTS "customers_staff_all" ON customers;
+DROP POLICY IF EXISTS "customers_select_staff" ON customers;
+DROP POLICY IF EXISTS "requests_insert_anon" ON customer_requests;
+DROP POLICY IF EXISTS "requests_staff_select" ON customer_requests;
+DROP POLICY IF EXISTS "requests_staff_update" ON customer_requests;
+DROP POLICY IF EXISTS "sites_staff" ON customer_sites;
+DROP POLICY IF EXISTS "interactions_staff" ON customer_interactions;
+DROP POLICY IF EXISTS "visits_staff" ON visits;
+DROP POLICY IF EXISTS "employees_staff" ON employees;
+DROP POLICY IF EXISTS "tasks_staff" ON tasks;
+DROP POLICY IF EXISTS "events_staff" ON events;
+DROP POLICY IF EXISTS "event_customers_staff" ON event_customers;
+DROP POLICY IF EXISTS "event_attendees_staff" ON event_attendees;
 
 -- Profiles: users can read all, update own; admins can update any
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (auth.uid() IS NOT NULL);
@@ -282,15 +325,26 @@ RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_profiles_updated_at ON profiles;
 CREATE TRIGGER trg_profiles_updated_at BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_customers_updated_at ON customers;
 CREATE TRIGGER trg_customers_updated_at BEFORE UPDATE ON customers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_employees_updated_at ON employees;
 CREATE TRIGGER trg_employees_updated_at BEFORE UPDATE ON employees
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_requests_updated_at ON customer_requests;
 CREATE TRIGGER trg_requests_updated_at BEFORE UPDATE ON customer_requests
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_tasks_updated_at ON tasks;
 CREATE TRIGGER trg_tasks_updated_at BEFORE UPDATE ON tasks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS trg_events_updated_at ON events;
 CREATE TRIGGER trg_events_updated_at BEFORE UPDATE ON events
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
