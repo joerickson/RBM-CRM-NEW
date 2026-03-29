@@ -69,3 +69,13 @@ ALTER TABLE event_attendees
   ADD COLUMN IF NOT EXISTS company TEXT,
   ADD COLUMN IF NOT EXISTS tickets_assigned INTEGER NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS parking_assigned INTEGER NOT NULL DEFAULT 0;
+
+-- 9. Add per-attendee tickets_sent / parking_sent to event_attendees
+ALTER TABLE event_attendees
+  ADD COLUMN IF NOT EXISTS tickets_sent BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS parking_sent BOOLEAN NOT NULL DEFAULT false;
+
+-- 10. Add per-attendee tickets_sent / parking_sent to event_customers
+ALTER TABLE event_customers
+  ADD COLUMN IF NOT EXISTS tickets_sent BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS parking_sent BOOLEAN NOT NULL DEFAULT false;

@@ -179,6 +179,33 @@ export async function updateCustomerEventTickets(
   }
 }
 
+export async function updateCustomerEventFields(
+  eventId: string,
+  customerId: string,
+  ticketsAssigned: number,
+  parkingAssigned: number,
+  ticketsSent: boolean,
+  parkingSent: boolean
+) {
+  try {
+    await db
+      .update(eventCustomers)
+      .set({ ticketsAssigned, parkingAssigned, ticketsSent, parkingSent })
+      .where(
+        and(
+          eq(eventCustomers.eventId, eventId),
+          eq(eventCustomers.customerId, customerId)
+        )
+      );
+
+    revalidatePath("/events");
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { error: "Failed to update attendee" };
+  }
+}
+
 // ─── Non-customer Attendees ───────────────────────────────────────────────────
 
 export async function addAttendeeToEvent(
@@ -267,6 +294,27 @@ export async function updateEventAttendeeTickets(
   } catch (err) {
     console.error(err);
     return { error: "Failed to update tickets" };
+  }
+}
+
+export async function updateEventAttendeeFields(
+  eventAttendeeId: string,
+  ticketsAssigned: number,
+  parkingAssigned: number,
+  ticketsSent: boolean,
+  parkingSent: boolean
+) {
+  try {
+    await db
+      .update(eventAttendees)
+      .set({ ticketsAssigned, parkingAssigned, ticketsSent, parkingSent })
+      .where(eq(eventAttendees.id, eventAttendeeId));
+
+    revalidatePath("/events");
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { error: "Failed to update attendee" };
   }
 }
 

@@ -437,6 +437,8 @@ export const eventCustomers = pgTable("event_customers", {
   attended: boolean("attended").default(false),
   ticketsAssigned: integer("tickets_assigned").notNull().default(0),
   parkingAssigned: integer("parking_assigned").notNull().default(0),
+  ticketsSent: boolean("tickets_sent").notNull().default(false),
+  parkingSent: boolean("parking_sent").notNull().default(false),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -462,6 +464,8 @@ export const eventAttendees = pgTable("event_attendees", {
   type: text("type").notNull().default("guest"),
   ticketsAssigned: integer("tickets_assigned").notNull().default(0),
   parkingAssigned: integer("parking_assigned").notNull().default(0),
+  ticketsSent: boolean("tickets_sent").notNull().default(false),
+  parkingSent: boolean("parking_sent").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
