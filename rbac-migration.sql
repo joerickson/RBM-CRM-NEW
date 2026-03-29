@@ -77,7 +77,7 @@ RETURNS BOOLEAN
 STABLE
 LANGUAGE sql
 AS $$
-  SELECT role IN ('admin', 'sales_manager', 'sales')
+  SELECT role::text IN ('admin', 'sales_manager', 'sales')
   FROM profiles
   WHERE clerk_id = requesting_user_clerk_id()
   LIMIT 1;
@@ -89,7 +89,7 @@ RETURNS BOOLEAN
 STABLE
 LANGUAGE sql
 AS $$
-  SELECT role IN ('sales_rep', 'account_manager', 'building_ops', 'building-ops')
+  SELECT role::text IN ('sales_rep', 'account_manager', 'building_ops', 'building-ops')
   FROM profiles
   WHERE clerk_id = requesting_user_clerk_id()
   LIMIT 1;
@@ -212,8 +212,8 @@ CREATE POLICY "employees_staff" ON employees
     AND EXISTS (
       SELECT 1 FROM profiles p
       WHERE p.clerk_id = requesting_user_clerk_id()
-        AND p.role IN ('admin', 'sales_manager', 'sales', 'sales_rep',
-                       'account_manager', 'building_ops', 'building-ops')
+        AND p.role::text IN ('admin', 'sales_manager', 'sales', 'sales_rep',
+                             'account_manager', 'building_ops', 'building-ops')
     )
   );
 
