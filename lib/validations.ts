@@ -30,6 +30,7 @@ export const customerSchema = z.object({
   primaryContactEmail: z.string().email().optional().nullable().or(z.literal("")),
   primaryContactPhone: z.string().optional().nullable(),
   assignedRepId: z.string().uuid().optional().nullable(),
+  assignedSalesRepClerkId: z.string().optional().nullable(),
   monthlyValue: z.coerce.number().optional().nullable(),
   contractStartDate: z.string().optional().nullable(),
   contractEndDate: z.string().optional().nullable(),

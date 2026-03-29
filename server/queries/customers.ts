@@ -1,13 +1,23 @@
 import { db } from "@/lib/db";
 import { customers } from "@/lib/db/schema";
 import { eq, ilike, or, and, desc } from "drizzle-orm";
+import { isRestrictedRole } from "@/lib/auth/get-current-profile";
+import type { AllowedRole } from "@/lib/auth/sync-user";
 
-export async function getAllCustomers(filters?: {
-  status?: string;
-  brand?: string;
-  search?: string;
-}) {
-  const conditions = [];
+export interface CustomerQueryContext {
+  role: AllowedRole;
+  clerkId: string;
+}
+
+export async function getAllCustomers(
+  filters?: {
+    status?: string;
+    brand?: string;
+    search?: string;
+  },
+  ctx?: CustomerQueryContext
+) {
+  const conditions: any[] = [];
 
   if (filters?.status) {
     conditions.push(eq(customers.status, filters.status as any));
@@ -23,6 +33,11 @@ export async function getAllCustomers(filters?: {
         ilike(customers.primaryContactEmail, `%${filters.search}%`)
       )
     );
+  }
+
+  // RBAC: restricted roles only see their own assigned records
+  if (ctx && isRestrictedRole(ctx.role)) {
+    conditions.push(eq(customers.assignedSalesRepClerkId, ctx.clerkId));
   }
 
   return db.query.customers.findMany({
@@ -61,28 +76,47 @@ export async function getCustomerById(id: string) {
   });
 }
 
-export async function getLeadsForSales() {
+export async function getLeadsForSales(ctx?: CustomerQueryContext) {
+  const conditions: any[] = [
+    or(eq(customers.status, "lead"), eq(customers.status, "prospect"))!,
+  ];
+
+  if (ctx && isRestrictedRole(ctx.role)) {
+    conditions.push(eq(customers.assignedSalesRepClerkId, ctx.clerkId));
+  }
+
   return db.query.customers.findMany({
-    where: or(
-      eq(customers.status, "lead"),
-      eq(customers.status, "prospect")
-    ),
+    where: and(...conditions),
     with: { assignedRep: true },
     orderBy: [desc(customers.updatedAt)],
   });
 }
 
-export async function getKanbanCustomers() {
+export async function getKanbanCustomers(ctx?: CustomerQueryContext) {
+  const stageFilter = (c: any, { isNotNull, or: _or, eq: _eq }: any) =>
+    _or(
+      isNotNull(c.stage),
+      _eq(c.status, "lead"),
+      _eq(c.status, "prospect"),
+      _eq(c.status, "active"),
+      _eq(c.status, "at-risk"),
+      _eq(c.status, "churned")
+    );
+
+  if (ctx && isRestrictedRole(ctx.role)) {
+    return db.query.customers.findMany({
+      where: (c, helpers) =>
+        and(
+          stageFilter(c, helpers),
+          eq(customers.assignedSalesRepClerkId, ctx.clerkId)
+        ),
+      with: { assignedRep: true },
+      orderBy: [desc(customers.updatedAt)],
+    });
+  }
+
   return db.query.customers.findMany({
-    where: (c, { isNotNull, or, eq }) =>
-      or(
-        isNotNull(c.stage),
-        eq(c.status, "lead"),
-        eq(c.status, "prospect"),
-        eq(c.status, "active"),
-        eq(c.status, "at-risk"),
-        eq(c.status, "churned")
-      ),
+    where: stageFilter,
     with: { assignedRep: true },
     orderBy: [desc(customers.updatedAt)],
   });

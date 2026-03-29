@@ -8,16 +8,28 @@ import {
   getAllIndustries,
   getAllVisitFrequencies,
 } from "@/server/queries/settings";
+import { getCurrentProfile } from "@/lib/auth/get-current-profile";
+import { syncClerkUserToSupabase } from "@/lib/auth/sync-user";
 
 export default async function CustomersPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; brand?: string; search?: string }>;
 }) {
-  const params = await searchParams;
+  await syncClerkUserToSupabase();
+
+  const [params, profile] = await Promise.all([
+    searchParams,
+    getCurrentProfile(),
+  ]);
+
+  const ctx = profile
+    ? { role: profile.role as any, clerkId: profile.clerkId }
+    : undefined;
+
   const [customers, customerStatuses, industriesList, visitFrequenciesList] =
     await Promise.all([
-      getAllCustomers(params),
+      getAllCustomers(params, ctx),
       getAllCustomerStatuses(),
       getAllIndustries(),
       getAllVisitFrequencies(),
