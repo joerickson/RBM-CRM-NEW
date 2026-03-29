@@ -79,11 +79,20 @@ type AttendeeRow = {
 };
 
 export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
+  // Sort events chronologically (ASC by date)
+  const sortedEvents = useMemo(
+    () =>
+      [...events].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      ),
+    [events]
+  );
+
   // Build deduplicated list of all attendees across all events
   const attendeeRows = useMemo<AttendeeRow[]>(() => {
     const seen = new Map<string, AttendeeRow>();
 
-    for (const evt of events) {
+    for (const evt of sortedEvents) {
       for (const ec of evt.eventCustomers) {
         const key = `customer-${ec.customerId}`;
         if (!seen.has(key)) {
@@ -149,7 +158,7 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
     return fromCustomers + fromAttendees;
   }
 
-  if (events.length === 0) {
+  if (sortedEvents.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
         No events to display.
@@ -166,15 +175,15 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
   }
 
   return (
-    <div className="overflow-auto border rounded-lg bg-white">
-      <table className="border-collapse" style={{ minWidth: `${200 + events.length * 180}px` }}>
+    <div className="overflow-x-auto border rounded-lg bg-white">
+      <table className="border-collapse" style={{ minWidth: `${200 + sortedEvents.length * 180}px` }}>
         <thead>
           {/* Event header row */}
           <tr className="bg-gray-50 border-b">
             <th className="sticky left-0 z-10 bg-gray-50 border-r px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[200px]">
               Attendee
             </th>
-            {events.map((evt) => {
+            {sortedEvents.map((evt) => {
               const color = evt.eventType?.color ?? "gray";
               const assigned = getAssignedTickets(evt);
               const assignedPark = getAssignedParking(evt);
@@ -240,7 +249,7 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
                   <span className="text-xs text-purple-600 font-medium">Guest</span>
                 )}
               </td>
-              {events.map((evt) => {
+              {sortedEvents.map((evt) => {
                 const cell = getCellForAttendee(evt, row);
                 return (
                   <td
@@ -289,7 +298,7 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
             <td className="sticky left-0 z-10 bg-gray-100 border-r px-4 py-2 text-xs text-muted-foreground uppercase tracking-wider">
               Totals
             </td>
-            {events.map((evt) => {
+            {sortedEvents.map((evt) => {
               const total = evt.eventCustomers.length + evt.eventAttendees.length;
               return (
                 <td key={evt.id} className="border-r px-3 py-2 text-center">
