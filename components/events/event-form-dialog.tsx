@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { eventSchema } from "@/lib/validations";
-import { createEvent, updateEvent } from "@/server/actions/events";
+import { createEvent, updateEvent, deleteEvent } from "@/server/actions/events";
 import { toast } from "@/hooks/use-toast";
 
 type FormData = z.infer<typeof eventSchema>;
@@ -66,6 +67,7 @@ export function EventFormDialog({
   repId,
 }: EventFormDialogProps) {
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const isEdit = !!event;
 
   const activeTypes = eventTypes.filter((t) => t.isActive);
@@ -109,6 +111,23 @@ export function EventFormDialog({
 
   const ticketsSent = watch("ticketsSent");
   const parkingSent = watch("parkingSent");
+
+  const handleDelete = async () => {
+    if (!event) return;
+    if (!confirm("Are you sure you want to delete this event? This will remove all attendee links.")) return;
+    setDeleting(true);
+    try {
+      const result = await deleteEvent(event.id);
+      if (result.error) {
+        toast({ title: result.error, variant: "destructive" });
+      } else {
+        toast({ title: "Event deleted" });
+        onClose();
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setSaving(true);
@@ -276,13 +295,27 @@ export function EventFormDialog({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
-            </Button>
+          <div className="flex justify-between gap-2 pt-2">
+            {isEdit && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={handleDelete}
+                disabled={deleting || saving}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving || deleting}>
+                {saving ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
