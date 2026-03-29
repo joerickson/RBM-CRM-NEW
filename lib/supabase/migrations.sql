@@ -49,6 +49,10 @@ CREATE TABLE IF NOT EXISTS event_customers (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Add attended column if table existed without it
+ALTER TABLE event_customers
+  ADD COLUMN IF NOT EXISTS attended BOOLEAN DEFAULT FALSE;
+
 -- Create event_attendees table
 CREATE TABLE IF NOT EXISTS event_attendees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
