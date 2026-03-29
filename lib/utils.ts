@@ -91,6 +91,13 @@ export function getHealthColor(score: number | null): string {
   return "text-red-600";
 }
 
+export function applyMergeFields(
+  template: string,
+  fields: Record<string, string>
+): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => fields[key] ?? `{{${key}}}`);
+}
+
 export function getScoreBg(score: number | null, type: "health" | "risk"): string {
   if (score === null) return "bg-gray-100";
   if (type === "health") {

@@ -20,6 +20,7 @@ import {
   PartyPopper,
   CheckCircle,
   XCircle,
+  Send,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ import { CustomerFormDialog } from "./customer-form-dialog";
 import { LogInteractionDialog } from "./log-interaction-dialog";
 import { ScheduleVisitDialog } from "./schedule-visit-dialog";
 import { AddToEventDialog } from "./add-to-event-dialog";
+import { ActivityTimeline } from "./activity-timeline";
+import { SendEmailDialog } from "./send-email-dialog";
 import { toast } from "@/hooks/use-toast";
 import { updateAttendance } from "@/server/actions/events";
 
@@ -107,6 +110,7 @@ export function CustomerDetailClient({
   const [showLogInteraction, setShowLogInteraction] = useState(false);
   const [showScheduleVisit, setShowScheduleVisit] = useState(false);
   const [showAddToEvent, setShowAddToEvent] = useState(false);
+  const [showSendEmail, setShowSendEmail] = useState(false);
   const [scoring, setScoring] = useState(false);
   const router = useRouter();
 
@@ -191,6 +195,14 @@ export function CustomerDetailClient({
               >
                 <MessageSquarePlus className="h-4 w-4 mr-2" />
                 Log Interaction
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSendEmail(true)}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Send Email
               </Button>
               <Button
                 variant="outline"
@@ -369,8 +381,9 @@ export function CustomerDetailClient({
       </div>
 
       {/* Tabs for History */}
-      <Tabs defaultValue="interactions">
+      <Tabs defaultValue="timeline">
         <TabsList>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="interactions">
             Interactions ({customer.interactions?.length ?? 0})
           </TabsTrigger>
@@ -387,6 +400,19 @@ export function CustomerDetailClient({
             Sites ({customer.sites?.length ?? 0})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="timeline">
+          <Card>
+            <CardContent className="p-4">
+              <ActivityTimeline
+                interactions={customer.interactions ?? []}
+                visits={customer.visits ?? []}
+                requests={customer.requests ?? []}
+                eventCustomers={eventCustomers}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="interactions">
           <Card>
@@ -686,6 +712,18 @@ export function CustomerDetailClient({
         }}
         customerId={customer.id}
         events={allEvents}
+      />
+
+      <SendEmailDialog
+        open={showSendEmail}
+        onClose={() => setShowSendEmail(false)}
+        customer={{
+          companyName: customer.companyName,
+          primaryContactEmail: customer.primaryContactEmail,
+          primaryContactName: customer.primaryContactName,
+          contractEndDate: customer.contractEndDate,
+          monthlyValue: customer.monthlyValue,
+        }}
       />
     </div>
   );
