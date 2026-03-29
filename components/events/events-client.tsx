@@ -159,7 +159,7 @@ export function EventsClient({
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Delete this event? This cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete this event? This will remove all attendee links.")) return;
     const result = await deleteEvent(id);
     if (result.error) {
       toast({ title: result.error, variant: "destructive" });
