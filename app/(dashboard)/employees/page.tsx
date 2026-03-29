@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Header } from "@/components/layout/header";
 import { db } from "@/lib/db";
 import { employees } from "@/lib/db/schema";
