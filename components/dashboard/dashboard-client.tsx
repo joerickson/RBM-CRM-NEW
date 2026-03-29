@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { DashboardStats, Customer, AIActionPlan } from "@/types";
+import { DashboardStats, AIActionPlan } from "@/types";
 import { formatCurrency, BRAND_LABELS, getRiskColor } from "@/lib/utils";
 
 interface StatCardProps {
@@ -55,9 +55,22 @@ function StatCard({ title, value, icon: Icon, description, color = "text-primary
   );
 }
 
+interface AtRiskRow {
+  id: string;
+  company_name: string;
+  status: string;
+  brand: string;
+  monthly_value: string | null;
+  ai_risk_score: number | null;
+  ai_health_score: number | null;
+  risk_threshold_days: number | null;
+  primary_contact_name: string | null;
+  last_visit_date: string | null;
+}
+
 interface DashboardClientProps {
   stats: DashboardStats;
-  atRiskCustomers: Customer[];
+  atRiskCustomers: AtRiskRow[];
 }
 
 export function DashboardClient({ stats, atRiskCustomers }: DashboardClientProps) {
@@ -226,7 +239,9 @@ export function DashboardClient({ stats, atRiskCustomers }: DashboardClientProps
               <AlertTriangle className="h-5 w-5 text-red-500" />
               <CardTitle className="text-base">At-Risk Accounts</CardTitle>
             </div>
-            <CardDescription>Accounts needing immediate attention</CardDescription>
+            <CardDescription>
+              Active clients with no completed visit in 90+ days
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {atRiskCustomers.length === 0 ? (
@@ -235,31 +250,44 @@ export function DashboardClient({ stats, atRiskCustomers }: DashboardClientProps
               </div>
             ) : (
               <div className="space-y-3">
-                {atRiskCustomers.map((customer) => (
-                  <div
-                    key={customer.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-red-50"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{customer.companyName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {BRAND_LABELS[customer.brand]} •{" "}
-                        {formatCurrency(customer.monthlyValue)}/mo
-                      </p>
+                {atRiskCustomers.map((customer) => {
+                  const daysSince = customer.last_visit_date
+                    ? Math.floor(
+                        (Date.now() - new Date(customer.last_visit_date).getTime()) /
+                          86400000
+                      )
+                    : null;
+                  return (
+                    <div
+                      key={customer.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-red-50"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{customer.company_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {BRAND_LABELS[customer.brand as keyof typeof BRAND_LABELS] ?? customer.brand} •{" "}
+                          {formatCurrency(customer.monthly_value)}/mo
+                        </p>
+                        <p className="text-xs text-red-600 mt-0.5">
+                          {daysSince !== null
+                            ? `Last visit: ${daysSince} days ago`
+                            : "No visits on record"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${getRiskColor(customer.ai_risk_score)}`}>
+                          Risk: {customer.ai_risk_score ?? "—"}
+                        </p>
+                        {customer.ai_risk_score !== null && (
+                          <Progress
+                            value={customer.ai_risk_score}
+                            className="h-1 w-20 mt-1"
+                          />
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${getRiskColor(customer.aiRiskScore)}`}>
-                        Risk: {customer.aiRiskScore ?? "—"}
-                      </p>
-                      {customer.aiRiskScore !== null && (
-                        <Progress
-                          value={customer.aiRiskScore}
-                          className="h-1 w-20 mt-1"
-                        />
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

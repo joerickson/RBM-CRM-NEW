@@ -56,6 +56,8 @@ export function CustomerFormDialog({
       primaryContactPhone: customer?.primaryContactPhone ?? "",
       monthlyValue: customer?.monthlyValue ? Number(customer.monthlyValue) : null,
       notes: customer?.notes ?? "",
+      visitFrequency: (customer as any)?.visitFrequency ?? "",
+      riskThresholdDays: (customer as any)?.riskThresholdDays ?? 90,
     },
   });
 
@@ -198,6 +200,40 @@ export function CustomerFormDialog({
             <div>
               <Label>Contact Phone</Label>
               <Input {...form.register("primaryContactPhone")} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Visit Frequency</Label>
+              <Select
+                value={form.watch("visitFrequency") ?? ""}
+                onValueChange={(v) => form.setValue("visitFrequency" as any, v || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Not set</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="bi-annual">Bi-annual</SelectItem>
+                  <SelectItem value="annual">Annual</SelectItem>
+                  <SelectItem value="as-needed">As needed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>At-Risk Threshold (days)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                {...form.register("riskThresholdDays" as any)}
+                placeholder="90"
+              />
             </div>
           </div>
 
