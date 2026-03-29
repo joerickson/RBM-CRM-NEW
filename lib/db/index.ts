@@ -4,7 +4,15 @@ import * as schema from "./schema";
 
 const connectionString = process.env.POSTGRES_URL!;
 
+const isLocal =
+  connectionString?.includes("localhost") ||
+  connectionString?.includes("127.0.0.1");
+
 // Disable prefetch as it is not supported for "Transaction" pool mode
-const client = postgres(connectionString, { prepare: false });
+// SSL is required for Supabase connections
+const client = postgres(connectionString, {
+  prepare: false,
+  ssl: isLocal ? false : "require",
+});
 
 export const db = drizzle(client, { schema });
