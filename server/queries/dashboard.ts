@@ -1,12 +1,16 @@
 import { db } from "@/lib/db";
 import { customers, tasks, visits, customerRequests } from "@/lib/db/schema";
-import { eq, count, and, gte, lte, sql } from "drizzle-orm";
+import { eq, count, and, sql } from "drizzle-orm";
 import { DashboardStats } from "@/types";
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const today = new Date();
-  const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDayStr = startOfDay.toISOString();
+  const endOfDayStr = endOfDay.toISOString();
 
   const [
     totalCustomersResult,
@@ -41,8 +45,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .where(
         and(
           eq(visits.status, "scheduled"),
-          gte(visits.visitDate, startOfDay),
-          lte(visits.visitDate, endOfDay)
+          sql`${visits.visitDate} >= ${startOfDayStr}::timestamptz`,
+          sql`${visits.visitDate} <= ${endOfDayStr}::timestamptz`
         )
       ),
     db
@@ -72,6 +76,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export async function getAtRiskCustomers(thresholdDays = 90) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - thresholdDays);
+  const cutoffStr = cutoff.toISOString();
 
   const result = await db.execute(sql`
     SELECT c.id, c.company_name, c.status, c.brand, c.monthly_value,
@@ -82,7 +87,7 @@ export async function getAtRiskCustomers(thresholdDays = 90) {
     LEFT JOIN visits v ON v.customer_id = c.id AND v.status = 'completed'
     WHERE c.status IN ('active', 'at-risk')
     GROUP BY c.id
-    HAVING MAX(v.visit_date) IS NULL OR MAX(v.visit_date) < ${cutoff}
+    HAVING MAX(v.visit_date) IS NULL OR MAX(v.visit_date) < ${cutoffStr}::timestamptz
     ORDER BY last_visit_date ASC NULLS FIRST
     LIMIT 10
   `);
