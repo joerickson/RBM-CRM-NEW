@@ -90,8 +90,43 @@ export const eventSchema = z.object({
   name: z.string().min(1, "Event name is required"),
   date: z.string().min(1, "Date is required"),
   location: z.string().optional().nullable(),
-  type: z.enum(["delta-center", "theater", "golf", "dinner", "client-appreciation", "conference", "other"]),
+  // Legacy enum type (kept for backward compat)
+  type: z.enum(["delta-center", "theater", "golf", "dinner", "client-appreciation", "conference", "other"]).optional(),
+  // New dynamic event type FK
+  eventTypeId: z.string().uuid().optional().nullable(),
+  company: z.string().optional().nullable(),
+  totalTickets: z.coerce.number().min(0).default(0),
+  totalParkingPasses: z.coerce.number().min(0).default(0),
+  ticketsSent: z.boolean().default(false),
+  parkingSent: z.boolean().default(false),
   notes: z.string().optional().nullable(),
+});
+
+export const eventTypeSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, and hyphens only"),
+  color: z.string().min(1, "Color is required"),
+  sortOrder: z.coerce.number().min(0).default(0),
+  isActive: z.boolean().default(true),
+});
+
+export const attendeeSchema = z.object({
+  fullName: z.string().min(1, "Name is required"),
+  email: z.string().email().optional().nullable().or(z.literal("")),
+  phone: z.string().optional().nullable(),
+  company: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+
+export const eventAttendeeSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  company: z.string().optional().nullable(),
+  ticketsAssigned: z.coerce.number().min(0).default(0),
+  parkingAssigned: z.coerce.number().min(0).default(0),
+  attendeeId: z.string().uuid().optional().nullable(),
+  type: z.string().default("guest"),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -102,3 +137,6 @@ export type CustomerRequestInput = z.infer<typeof customerRequestSchema>;
 export type EmployeeInput = z.infer<typeof employeeSchema>;
 export type VisitInput = z.infer<typeof visitSchema>;
 export type EventInput = z.infer<typeof eventSchema>;
+export type EventTypeInput = z.infer<typeof eventTypeSchema>;
+export type AttendeeInput = z.infer<typeof attendeeSchema>;
+export type EventAttendeeInput = z.infer<typeof eventAttendeeSchema>;

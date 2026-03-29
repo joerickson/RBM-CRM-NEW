@@ -14,23 +14,33 @@ import {
   LogOut,
   PartyPopper,
   Mail,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/sales", label: "Sales", icon: TrendingUp },
-  { href: "/customers", label: "Customers", icon: Users },
-  { href: "/events", label: "Events", icon: PartyPopper },
-  { href: "/employees", label: "Employees", icon: UserCheck },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/email-templates", label: "Email Templates", icon: Mail },
-  { href: "/admin", label: "Admin", icon: Settings },
+const ALL_NAV_ITEMS = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "sales", "building-ops", "customer"] },
+  { href: "/sales", label: "Sales", icon: TrendingUp, roles: ["admin", "sales"] },
+  { href: "/customers", label: "Customers", icon: Users, roles: ["admin", "sales", "building-ops"] },
+  { href: "/events", label: "Events", icon: PartyPopper, roles: ["admin", "sales", "building-ops", "customer", "events-only"] },
+  { href: "/employees", label: "Employees", icon: UserCheck, roles: ["admin", "sales"] },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare, roles: ["admin", "sales", "building-ops"] },
+  { href: "/email-templates", label: "Email Templates", icon: Mail, roles: ["admin", "sales"] },
+  { href: "/admin", label: "Admin", icon: Settings, roles: ["admin"] },
+  { href: "/admin/event-types", label: "Event Types", icon: Tag, roles: ["admin"] },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  userRole?: string;
+}
+
+export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
+
+  const navItems = ALL_NAV_ITEMS.filter((item) =>
+    !userRole || item.roles.includes(userRole)
+  );
 
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-white">

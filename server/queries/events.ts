@@ -1,15 +1,18 @@
 import { db } from "@/lib/db";
-import { events, eventCustomers } from "@/lib/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { events, eventCustomers, eventTypes, attendees } from "@/lib/db/schema";
+import { eq, desc, sql, asc } from "drizzle-orm";
 
 export async function getAllEvents() {
   return db.query.events.findMany({
     with: {
       createdBy: true,
+      eventType: true,
       eventCustomers: {
         with: { customer: true },
       },
-      eventAttendees: true,
+      eventAttendees: {
+        with: { profile: true, attendee: true },
+      },
     },
     orderBy: [desc(events.date)],
   });
@@ -20,11 +23,12 @@ export async function getEventById(id: string) {
     where: eq(events.id, id),
     with: {
       createdBy: true,
+      eventType: true,
       eventCustomers: {
         with: { customer: true },
       },
       eventAttendees: {
-        with: { profile: true },
+        with: { profile: true, attendee: true },
       },
     },
   });
@@ -35,10 +39,22 @@ export async function getEventsForCustomer(customerId: string) {
     where: eq(eventCustomers.customerId, customerId),
     with: {
       event: {
-        with: { eventAttendees: true },
+        with: { eventType: true, eventAttendees: true },
       },
     },
     orderBy: (ec, { desc }) => [desc(ec.createdAt)],
+  });
+}
+
+export async function getAllEventTypes() {
+  return db.query.eventTypes.findMany({
+    orderBy: [asc(eventTypes.sortOrder), asc(eventTypes.createdAt)],
+  });
+}
+
+export async function getAllAttendees() {
+  return db.query.attendees.findMany({
+    orderBy: [desc(attendees.attendanceCount)],
   });
 }
 
@@ -47,8 +63,6 @@ export async function getAtRiskByVisits(thresholdDays = 90) {
   cutoff.setDate(cutoff.getDate() - thresholdDays);
   const cutoffStr = cutoff.toISOString();
 
-  // Find active customers whose last completed visit is older than threshold
-  // or who have never had a visit
   const result = await db.execute(sql`
     SELECT c.id, c.company_name, c.status, c.brand, c.monthly_value,
            c.ai_risk_score, c.ai_health_score, c.risk_threshold_days,

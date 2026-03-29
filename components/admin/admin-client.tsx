@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Inbox, Users, AlertCircle } from "lucide-react";
+import { Inbox, Users, AlertCircle, Tag } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,23 @@ export function AdminClient({ requests, allProfiles }: AdminClientProps) {
 
   return (
     <div className="flex-1 overflow-auto p-6 space-y-6">
+      {/* Quick Links */}
+      <div className="flex gap-3">
+        <Link href="/admin/event-types">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-purple-100 flex items-center justify-center">
+                <Tag className="h-4 w-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Event Types</p>
+                <p className="text-xs text-muted-foreground">Manage event categories</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <Card>
