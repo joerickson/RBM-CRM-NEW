@@ -12,8 +12,10 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  serverActions: {
-    allowedOrigins: ["*.app.github.dev", "localhost:3000"],
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["*.app.github.dev", "localhost:3000"],
+    },
   },
 };
 
