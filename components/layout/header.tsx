@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -10,15 +10,12 @@ interface HeaderProps {
 }
 
 export async function Header({ title }: HeaderProps) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { userId } = await auth();
 
   let profile = null;
-  if (user) {
+  if (userId) {
     profile = await db.query.profiles.findFirst({
-      where: eq(profiles.id, user.id),
+      where: eq(profiles.clerkId, userId),
     });
   }
 
@@ -29,7 +26,7 @@ export async function Header({ title }: HeaderProps) {
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : user?.email?.[0]?.toUpperCase() ?? "?";
+    : "?";
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-white px-6">
