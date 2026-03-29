@@ -1,9 +1,10 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser, clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { profiles } from "@/lib/db/schema";
+import { profiles, pendingInvitations } from "@/lib/db/schema";
+import { and, eq, gt, isNull } from "drizzle-orm";
 
 export type AllowedRole =
   | "admin"
@@ -34,7 +35,7 @@ export async function syncClerkUserToSupabase() {
   if (!user) return null;
 
   const rawRole = user.publicMetadata?.role as string | undefined;
-  const role: AllowedRole =
+  let role: AllowedRole =
     rawRole && VALID_ROLES.includes(rawRole as AllowedRole)
       ? (rawRole as AllowedRole)
       : "sales_rep";
@@ -42,6 +43,42 @@ export async function syncClerkUserToSupabase() {
   const email = user.emailAddresses[0]?.emailAddress ?? "";
   const fullName =
     [user.firstName, user.lastName].filter(Boolean).join(" ") || null;
+
+  // If no role in Clerk metadata, check for a pending invitation by email
+  if (!rawRole || !VALID_ROLES.includes(rawRole as AllowedRole)) {
+    if (email) {
+      const invite = await db.query.pendingInvitations.findFirst({
+        where: and(
+          eq(pendingInvitations.email, email),
+          isNull(pendingInvitations.usedAt),
+          gt(pendingInvitations.expiresAt, new Date())
+        ),
+      });
+
+      if (invite) {
+        const inviteRole = invite.role as AllowedRole;
+        if (VALID_ROLES.includes(inviteRole)) {
+          role = inviteRole;
+        }
+
+        // Mark invitation as used
+        await db
+          .update(pendingInvitations)
+          .set({ usedAt: new Date() })
+          .where(eq(pendingInvitations.id, invite.id));
+
+        // Persist role in Clerk publicMetadata so future syncs are consistent
+        try {
+          const client = await clerkClient();
+          await client.users.updateUserMetadata(user.id, {
+            publicMetadata: { role },
+          });
+        } catch (err) {
+          console.error("[sync-user] failed to update Clerk metadata", err);
+        }
+      }
+    }
+  }
 
   const [profile] = await db
     .insert(profiles)

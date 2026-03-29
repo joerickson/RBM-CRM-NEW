@@ -26,7 +26,7 @@ const ROLE_OPTIONS = [
   { value: "sales_rep",       label: "Sales Rep" },
   { value: "account_manager", label: "Account Manager" },
   { value: "building_ops",    label: "Building Ops" },
-  { value: "events_only",     label: "Events Only" },
+  { value: "events-only",     label: "Events Only" },
   { value: "customer",        label: "Customer (Portal)" },
 ];
 
