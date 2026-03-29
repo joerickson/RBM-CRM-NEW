@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -56,6 +57,8 @@ interface SalesClientProps {
 }
 
 export function SalesClient({ initialCustomers }: SalesClientProps) {
+  const router = useRouter();
+  const isDraggingRef = useRef(false);
   const [columns, setColumns] = useState<KanbanColumn[]>(() =>
     STAGE_ORDER.map((stage) => ({
       id: stage,
@@ -76,6 +79,8 @@ export function SalesClient({ initialCustomers }: SalesClientProps) {
 
   const onDragEnd = useCallback(
     async (result: DropResult) => {
+      // Allow a short window so any click handler can read the flag
+      setTimeout(() => { isDraggingRef.current = false; }, 50);
       const { source, destination, draggableId } = result;
       if (!destination || source.droppableId === destination.droppableId) return;
 
@@ -160,7 +165,7 @@ export function SalesClient({ initialCustomers }: SalesClientProps) {
 
       {/* Kanban Board */}
       <div className="flex-1 overflow-x-auto p-6">
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext onDragStart={() => { isDraggingRef.current = true; }} onDragEnd={onDragEnd}>
           <div className="flex gap-4 h-full" style={{ minWidth: "max-content" }}>
             {columns.map((column) => (
               <div key={column.id} className="flex flex-col w-64 shrink-0">
@@ -197,9 +202,14 @@ export function SalesClient({ initialCustomers }: SalesClientProps) {
                                 {...provided.dragHandleProps}
                               >
                                 <Card
-                                  className={`cursor-grab active:cursor-grabbing transition-shadow ${
+                                  className={`cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 active:cursor-grabbing ${
                                     snapshot.isDragging ? "shadow-lg rotate-1" : ""
                                   }`}
+                                  onClick={() => {
+                                    if (!isDraggingRef.current) {
+                                      router.push(`/customers/${customer.id}`);
+                                    }
+                                  }}
                                 >
                                   <CardContent className="p-3">
                                     <p className="text-sm font-medium leading-tight">
