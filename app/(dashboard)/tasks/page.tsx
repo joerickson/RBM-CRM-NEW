@@ -1,30 +1,29 @@
 export const dynamic = "force-dynamic";
 
 import { Header } from "@/components/layout/header";
-import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
 import { TasksClient } from "@/components/tasks/tasks-client";
-import { createClient } from "@/lib/supabase/server";
-import { profiles } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getCurrentProfile } from "@/lib/auth/get-current-profile";
+import { getTasksByRole } from "@/server/queries/tasks-by-role";
+import { syncClerkUserToSupabase } from "@/lib/auth/sync-user";
 
 export default async function TasksPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Ensure profile exists and is in sync
+  await syncClerkUserToSupabase();
 
-  const [allTasks, profile] = await Promise.all([
-    db.query.tasks.findMany({
-      with: { assignedTo: true, customer: true, createdBy: true },
-      orderBy: [desc(tasks.createdAt)],
-    }),
-    user ? db.query.profiles.findFirst({ where: eq(profiles.id, user.id) }) : null,
-  ]);
+  const profile = await getCurrentProfile();
+
+  const role = (profile?.role ?? "sales_rep") as any;
+  const clerkId = profile?.clerkId ?? "";
+
+  const allTasks = await getTasksByRole(role, clerkId);
 
   return (
     <div className="flex flex-col h-full">
       <Header title="Tasks" />
-      <TasksClient initialTasks={allTasks as any} currentUserId={user?.id ?? ""} />
+      <TasksClient
+        initialTasks={allTasks as any}
+        currentUserId={profile?.id ?? ""}
+      />
     </div>
   );
 }

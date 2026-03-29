@@ -20,6 +20,11 @@ export const userRoleEnum = pgEnum("user_role", [
   "building-ops",
   "customer",
   "events-only",
+  // New granular roles
+  "sales_manager",
+  "sales_rep",
+  "account_manager",
+  "building_ops",
 ]);
 
 export const brandEnum = pgEnum("brand", [
@@ -138,6 +143,7 @@ export const customers = pgTable(
     assignedRepId: uuid("assigned_rep_id").references(() => profiles.id, {
       onDelete: "set null",
     }),
+    assignedSalesRepClerkId: text("assigned_sales_rep_clerk_id"),
     monthlyValue: decimal("monthly_value", { precision: 10, scale: 2 }),
     contractStartDate: date("contract_start_date"),
     contractEndDate: date("contract_end_date"),
@@ -215,6 +221,7 @@ export const visits = pgTable(
     employeeId: uuid("employee_id").references(() => employees.id, {
       onDelete: "set null",
     }),
+    assignedSalesRepClerkId: text("assigned_sales_rep_clerk_id"),
     visitDate: timestamp("visit_date", { withTimezone: true }).notNull(),
     visitType: text("visit_type").notNull().default("routine"),
     status: visitStatusEnum("status").notNull().default("scheduled"),
@@ -240,6 +247,7 @@ export const customerInteractions = pgTable(
     repId: uuid("rep_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
+    assignedSalesRepClerkId: text("assigned_sales_rep_clerk_id"),
     type: text("type").notNull(),
     subject: text("subject").notNull(),
     notes: text("notes"),
@@ -298,6 +306,7 @@ export const tasks = pgTable(
     assignedToId: uuid("assigned_to_id").references(() => profiles.id, {
       onDelete: "set null",
     }),
+    assignedSalesRepClerkId: text("assigned_sales_rep_clerk_id"),
     createdById: uuid("created_by_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),

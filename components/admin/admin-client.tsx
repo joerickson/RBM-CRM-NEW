@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Inbox, Users, AlertCircle, Tag, Settings2 } from "lucide-react";
+import { Inbox, Users, AlertCircle, Tag, Settings2, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import { CustomerRequest, Profile } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { updateRequestStatus } from "@/server/actions/requests";
 import { toast } from "@/hooks/use-toast";
+import { InviteUserDialog } from "./invite-user-dialog";
 
 const STATUS_COLORS = {
   open: "bg-red-100 text-red-700",
@@ -43,6 +44,7 @@ interface AdminClientProps {
 export function AdminClient({ requests, allProfiles }: AdminClientProps) {
   const router = useRouter();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
 
   const handleStatusChange = async (
     id: string,
@@ -98,6 +100,20 @@ export function AdminClient({ requests, allProfiles }: AdminClientProps) {
             </CardContent>
           </Card>
         </Link>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowInviteDialog(true)}
+        >
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-green-100 flex items-center justify-center">
+              <UserPlus className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Invite User</p>
+              <p className="text-xs text-muted-foreground">Add team members</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Stats */}
@@ -219,6 +235,12 @@ export function AdminClient({ requests, allProfiles }: AdminClientProps) {
         </TabsContent>
 
         <TabsContent value="team">
+          <div className="mb-4 flex justify-end">
+            <Button size="sm" onClick={() => setShowInviteDialog(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite User
+            </Button>
+          </div>
           <div className="rounded-lg border bg-white overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
@@ -236,7 +258,7 @@ export function AdminClient({ requests, allProfiles }: AdminClientProps) {
                     <td className="px-4 py-3 text-muted-foreground">{p.email}</td>
                     <td className="px-4 py-3">
                       <Badge variant="outline" className="capitalize text-xs">
-                        {p.role}
+                        {p.role?.replace(/_/g, " ")}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
@@ -249,6 +271,11 @@ export function AdminClient({ requests, allProfiles }: AdminClientProps) {
           </div>
         </TabsContent>
       </Tabs>
+
+      <InviteUserDialog
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+      />
     </div>
   );
 }
