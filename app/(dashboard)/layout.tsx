@@ -1,12 +1,12 @@
 import { Sidebar } from "@/components/layout/sidebar";
-import { syncClerkUser } from "@/lib/auth/sync-user";
+import { syncClerkUserToSupabase } from "@/lib/auth/sync-user";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await syncClerkUser();
+  await syncClerkUserToSupabase();
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
