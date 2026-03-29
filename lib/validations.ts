@@ -123,6 +123,7 @@ export const eventAttendeeSchema = z.object({
   email: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   company: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
   ticketsAssigned: z.coerce.number().min(0).default(0),
   parkingAssigned: z.coerce.number().min(0).default(0),
   attendeeId: z.string().uuid().optional().nullable(),
