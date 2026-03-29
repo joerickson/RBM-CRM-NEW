@@ -189,10 +189,9 @@ export function AddAttendeeDialog({
                       <User className="h-4 w-4 text-purple-500 shrink-0" />
                     )}
                     <div>
-                      <p className="text-sm font-medium">{r.name}</p>
-                      {r.company && (
-                        <p className="text-xs text-muted-foreground">{r.company}</p>
-                      )}
+                      <p className="text-sm font-medium">
+                        {r.company ? `${r.name} - ${r.company}` : r.name}
+                      </p>
                       {r.email && (
                         <p className="text-xs text-muted-foreground">{r.email}</p>
                       )}

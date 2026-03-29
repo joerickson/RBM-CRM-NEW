@@ -339,13 +339,10 @@ export function EventDetailDialog({ event, open, onClose }: EventDetailDialogPro
                     <div className="flex items-center gap-2 min-w-0">
                       <Users className="h-4 w-4 text-purple-500 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{ea.name}</p>
-                        {ea.company && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {ea.company}
-                          </p>
-                        )}
-                        {ea.email && !ea.company && (
+                        <p className="text-sm font-medium truncate">
+                          {ea.company ? `${ea.name} - ${ea.company}` : ea.name}
+                        </p>
+                        {ea.email && (
                           <p className="text-xs text-muted-foreground truncate">
                             {ea.email}
                           </p>
