@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "sales" | "building-ops" | "customer";
+export type UserRole = "admin" | "sales" | "building-ops" | "customer" | "events-only";
 
 export type Brand = "rbm-services" | "double-take" | "five-star";
 
@@ -189,4 +189,47 @@ export interface KanbanColumn {
   id: SalesStage;
   label: string;
   customers: Customer[];
+}
+
+export interface EventType {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Attendee {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  notes: string | null;
+  attendanceCount: number;
+  lastAttended: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventRecord {
+  id: string;
+  name: string;
+  date: string;
+  location: string | null;
+  type: string;
+  eventTypeId: string | null;
+  eventType: EventType | null;
+  company: string | null;
+  totalTickets: number;
+  totalParkingPasses: number;
+  ticketsSent: boolean;
+  parkingSent: boolean;
+  notes: string | null;
+  createdById: string | null;
+  createdBy: Pick<Profile, "id" | "fullName"> | null;
+  createdAt: string;
+  updatedAt: string;
 }

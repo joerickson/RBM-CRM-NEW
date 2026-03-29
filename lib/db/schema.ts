@@ -19,6 +19,7 @@ export const userRoleEnum = pgEnum("user_role", [
   "sales",
   "building-ops",
   "customer",
+  "events-only",
 ]);
 
 export const brandEnum = pgEnum("brand", [
@@ -318,12 +319,59 @@ export const tasks = pgTable(
   })
 );
 
+// ─── Event Types (dynamic, admin-managed) ─────────────────────────────────────
+
+export const eventTypes = pgTable("event_types", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  color: text("color").notNull().default("gray"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Attendees (non-customer people who attend events) ───────────────────────
+
+export const attendees = pgTable("attendees", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fullName: text("full_name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  notes: text("notes"),
+  attendanceCount: integer("attendance_count").notNull().default(0),
+  lastAttended: timestamp("last_attended", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Events ──────────────────────────────────────────────────────────────────
+
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   date: timestamp("date", { withTimezone: true }).notNull(),
   location: text("location"),
+  // Legacy enum type kept for backward compat
   type: eventTypeEnum("type").notNull().default("other"),
+  // New FK to dynamic event_types table (preferred going forward)
+  eventTypeId: uuid("event_type_id").references(() => eventTypes.id, {
+    onDelete: "set null",
+  }),
+  // Multi-company support
+  company: text("company"),
+  // Ticket & parking management
+  totalTickets: integer("total_tickets").notNull().default(0),
+  totalParkingPasses: integer("total_parking_passes").notNull().default(0),
+  ticketsSent: boolean("tickets_sent").notNull().default(false),
+  parkingSent: boolean("parking_sent").notNull().default(false),
   notes: text("notes"),
   createdById: uuid("created_by_id").references(() => profiles.id, {
     onDelete: "set null",
@@ -345,6 +393,8 @@ export const eventCustomers = pgTable("event_customers", {
     .notNull()
     .references(() => customers.id, { onDelete: "cascade" }),
   attended: boolean("attended").default(false),
+  ticketsAssigned: integer("tickets_assigned").notNull().default(0),
+  parkingAssigned: integer("parking_assigned").notNull().default(0),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -359,8 +409,17 @@ export const eventAttendees = pgTable("event_attendees", {
   profileId: uuid("profile_id").references(() => profiles.id, {
     onDelete: "cascade",
   }),
+  // Link to attendees table for non-customer guests
+  attendeeId: uuid("attendee_id").references(() => attendees.id, {
+    onDelete: "set null",
+  }),
   name: text("name").notNull(),
-  type: text("type").notNull().default("employee"),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  type: text("type").notNull().default("guest"),
+  ticketsAssigned: integer("tickets_assigned").notNull().default(0),
+  parkingAssigned: integer("parking_assigned").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -517,10 +576,22 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
   visits: many(visits),
 }));
 
+export const eventTypesRelations = relations(eventTypes, ({ many }) => ({
+  events: many(events),
+}));
+
+export const attendeesRelations = relations(attendees, ({ many }) => ({
+  eventAttendees: many(eventAttendees),
+}));
+
 export const eventsRelations = relations(events, ({ one, many }) => ({
   createdBy: one(profiles, {
     fields: [events.createdById],
     references: [profiles.id],
+  }),
+  eventType: one(eventTypes, {
+    fields: [events.eventTypeId],
+    references: [eventTypes.id],
   }),
   eventCustomers: many(eventCustomers),
   eventAttendees: many(eventAttendees),
@@ -545,6 +616,10 @@ export const eventAttendeesRelations = relations(eventAttendees, ({ one }) => ({
   profile: one(profiles, {
     fields: [eventAttendees.profileId],
     references: [profiles.id],
+  }),
+  attendee: one(attendees, {
+    fields: [eventAttendees.attendeeId],
+    references: [attendees.id],
   }),
 }));
 

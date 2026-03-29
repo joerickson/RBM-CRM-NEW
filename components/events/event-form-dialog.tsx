@@ -27,6 +27,14 @@ import { toast } from "@/hooks/use-toast";
 
 type FormData = z.infer<typeof eventSchema>;
 
+interface EventType {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  isActive: boolean;
+}
+
 interface EventFormDialogProps {
   open: boolean;
   onClose: () => void;
@@ -36,34 +44,41 @@ interface EventFormDialogProps {
     date: string | Date;
     location: string | null;
     type: string;
+    eventTypeId?: string | null;
+    company?: string | null;
+    totalTickets?: number;
+    totalParkingPasses?: number;
+    ticketsSent?: boolean;
+    parkingSent?: boolean;
     notes: string | null;
   };
+  eventTypes?: EventType[];
   repId?: string;
 }
 
-const EVENT_TYPES = [
-  { value: "delta-center", label: "Delta Center Suite" },
-  { value: "theater", label: "Hale Center Theater" },
-  { value: "golf", label: "Golf Outing" },
-  { value: "dinner", label: "Dinner" },
-  { value: "client-appreciation", label: "Client Appreciation" },
-  { value: "conference", label: "Conference" },
-  { value: "other", label: "Other" },
-];
+const COMPANIES = ["RBM Services", "TruCo", "Alpine", "DT"];
 
 export function EventFormDialog({
   open,
   onClose,
   event,
+  eventTypes = [],
   repId,
 }: EventFormDialogProps) {
   const [saving, setSaving] = useState(false);
   const isEdit = !!event;
 
+  const activeTypes = eventTypes.filter((t) => t.isActive);
+
+  // Find matching event type for existing event
+  const defaultTypeId = event?.eventTypeId
+    ?? (activeTypes.find((t) => t.slug === event?.type)?.id ?? activeTypes[0]?.id ?? "");
+
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<FormData>({
@@ -74,16 +89,39 @@ export function EventFormDialog({
           date: new Date(event.date).toISOString().slice(0, 16),
           location: event.location ?? "",
           type: event.type as any,
+          eventTypeId: defaultTypeId || null,
+          company: event.company ?? "",
+          totalTickets: event.totalTickets ?? 0,
+          totalParkingPasses: event.totalParkingPasses ?? 0,
+          ticketsSent: event.ticketsSent ?? false,
+          parkingSent: event.parkingSent ?? false,
           notes: event.notes ?? "",
         }
       : {
-          type: "other",
+          type: "other" as any,
+          eventTypeId: activeTypes[0]?.id ?? null,
+          totalTickets: 0,
+          totalParkingPasses: 0,
+          ticketsSent: false,
+          parkingSent: false,
         },
   });
+
+  const ticketsSent = watch("ticketsSent");
+  const parkingSent = watch("parkingSent");
 
   const onSubmit = async (data: FormData) => {
     setSaving(true);
     try {
+      // Resolve legacy type from eventTypeId slug
+      if (data.eventTypeId) {
+        const matched = activeTypes.find((t) => t.id === data.eventTypeId);
+        if (matched) {
+          const legacyTypes = ["delta-center","theater","golf","dinner","client-appreciation","conference","other"];
+          data.type = legacyTypes.includes(matched.slug) ? (matched.slug as any) : "other";
+        }
+      }
+
       const result = isEdit
         ? await updateEvent(event!.id, data)
         : await createEvent(data, repId);
@@ -102,13 +140,13 @@ export function EventFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Event" : "New Event"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1">
-            <Label>Event Name</Label>
+            <Label>Event Name *</Label>
             <Input placeholder="e.g. Delta Center Suite Night" {...register("name")} />
             {errors.name && (
               <p className="text-xs text-red-500">{errors.name.message}</p>
@@ -117,26 +155,35 @@ export function EventFormDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>Type</Label>
-              <Select
-                defaultValue={event?.type ?? "other"}
-                onValueChange={(v) => setValue("type", v as any)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENT_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Event Type</Label>
+              {activeTypes.length > 0 ? (
+                <Select
+                  defaultValue={defaultTypeId}
+                  onValueChange={(v) => setValue("eventTypeId", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeTypes.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-xs text-muted-foreground py-2">
+                  No event types configured.{" "}
+                  <a href="/admin/event-types" className="text-[#1B4F8A] underline">
+                    Add types in Admin → Event Types.
+                  </a>
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
-              <Label>Date & Time</Label>
+              <Label>Date & Time *</Label>
               <Input type="datetime-local" {...register("date")} />
               {errors.date && (
                 <p className="text-xs text-red-500">{errors.date.message}</p>
@@ -144,9 +191,80 @@ export function EventFormDialog({
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label>Location</Label>
-            <Input placeholder="e.g. Delta Center, Salt Lake City" {...register("location")} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Company</Label>
+              <Select
+                defaultValue={event?.company ?? ""}
+                onValueChange={(v) => setValue("company", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— None —</SelectItem>
+                  {COMPANIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Location</Label>
+              <Input
+                placeholder="e.g. Delta Center, Salt Lake City"
+                {...register("location")}
+              />
+            </div>
+          </div>
+
+          {/* Tickets & Parking */}
+          <div className="grid grid-cols-2 gap-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Total Tickets</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="0"
+                {...register("totalTickets")}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Total Parking Passes</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="0"
+                {...register("totalParkingPasses")}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="ticketsSent"
+                className="h-4 w-4 rounded border-gray-300"
+                checked={ticketsSent}
+                onChange={(e) => setValue("ticketsSent", e.target.checked)}
+              />
+              <Label htmlFor="ticketsSent" className="text-xs cursor-pointer">
+                Tickets Sent
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="parkingSent"
+                className="h-4 w-4 rounded border-gray-300"
+                checked={parkingSent}
+                onChange={(e) => setValue("parkingSent", e.target.checked)}
+              />
+              <Label htmlFor="parkingSent" className="text-xs cursor-pointer">
+                Parking Sent
+              </Label>
+            </div>
           </div>
 
           <div className="space-y-1">
