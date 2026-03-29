@@ -22,6 +22,25 @@ const STAGE_ORDER: SalesStage[] = [
   "closed-won",
 ];
 
+// Map customer status to a pipeline stage when stage is not explicitly set
+function getEffectiveStage(customer: Customer): SalesStage {
+  if (customer.stage) return customer.stage;
+  switch (customer.status) {
+    case "lead":
+      return "new-lead";
+    case "prospect":
+      return "contacted";
+    case "active":
+      return "closed-won";
+    case "at-risk":
+      return "negotiating";
+    case "churned":
+      return "closed-lost";
+    default:
+      return "new-lead";
+  }
+}
+
 const STAGE_COLORS: Record<SalesStage, string> = {
   "new-lead": "bg-slate-100 border-slate-300",
   contacted: "bg-blue-50 border-blue-200",
@@ -41,7 +60,7 @@ export function SalesClient({ initialCustomers }: SalesClientProps) {
     STAGE_ORDER.map((stage) => ({
       id: stage,
       label: STAGE_LABELS[stage],
-      customers: initialCustomers.filter((c) => c.stage === stage),
+      customers: initialCustomers.filter((c) => getEffectiveStage(c) === stage),
     }))
   );
 
