@@ -248,7 +248,7 @@ ALTER TABLE event_customers ADD COLUMN IF NOT EXISTS attended BOOLEAN DEFAULT FA
 ALTER TABLE event_customers ADD COLUMN IF NOT EXISTS notes    TEXT;
 
 -- ─── event_attendees columns ─────────────────────────────────
--- This is the column that caused the most recent error
+ALTER TABLE event_attendees ADD COLUMN IF NOT EXISTS name       TEXT NOT NULL DEFAULT '';
 ALTER TABLE event_attendees ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
 ALTER TABLE event_attendees ADD COLUMN IF NOT EXISTS type       TEXT NOT NULL DEFAULT 'employee';
 
