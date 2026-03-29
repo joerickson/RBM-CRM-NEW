@@ -69,12 +69,36 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   };
 }
 
-export async function getAtRiskCustomers() {
-  return db.query.customers.findMany({
-    where: eq(customers.status, "at-risk"),
-    with: { assignedRep: true },
-    limit: 10,
-  });
+export async function getAtRiskCustomers(thresholdDays = 90) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - thresholdDays);
+
+  const result = await db.execute(sql`
+    SELECT c.id, c.company_name, c.status, c.brand, c.monthly_value,
+           c.ai_risk_score, c.ai_health_score, c.risk_threshold_days,
+           c.primary_contact_name,
+           MAX(v.visit_date) as last_visit_date
+    FROM customers c
+    LEFT JOIN visits v ON v.customer_id = c.id AND v.status = 'completed'
+    WHERE c.status IN ('active', 'at-risk')
+    GROUP BY c.id
+    HAVING MAX(v.visit_date) IS NULL OR MAX(v.visit_date) < ${cutoff}
+    ORDER BY last_visit_date ASC NULLS FIRST
+    LIMIT 10
+  `);
+
+  return result as unknown as Array<{
+    id: string;
+    company_name: string;
+    status: string;
+    brand: string;
+    monthly_value: string | null;
+    ai_risk_score: number | null;
+    ai_health_score: number | null;
+    risk_threshold_days: number | null;
+    primary_contact_name: string | null;
+    last_visit_date: string | null;
+  }>;
 }
 
 export async function getRecentActivity() {

@@ -12,6 +12,7 @@ import {
   Settings,
   Building2,
   LogOut,
+  PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sales", label: "Sales", icon: TrendingUp },
   { href: "/customers", label: "Customers", icon: Users },
+  { href: "/events", label: "Events", icon: PartyPopper },
   { href: "/employees", label: "Employees", icon: UserCheck },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/admin", label: "Admin", icon: Settings },

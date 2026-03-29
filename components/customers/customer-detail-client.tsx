@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Brain,
@@ -16,6 +15,11 @@ import {
   AlertTriangle,
   Heart,
   Star,
+  MessageSquarePlus,
+  CalendarPlus,
+  PartyPopper,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +41,24 @@ import {
   getScoreBg,
 } from "@/lib/utils";
 import { CustomerFormDialog } from "./customer-form-dialog";
+import { LogInteractionDialog } from "./log-interaction-dialog";
+import { ScheduleVisitDialog } from "./schedule-visit-dialog";
+import { AddToEventDialog } from "./add-to-event-dialog";
 import { toast } from "@/hooks/use-toast";
+import { updateAttendance } from "@/server/actions/events";
+
+interface EventCustomerEntry {
+  id: string;
+  attended: boolean | null;
+  notes: string | null;
+  event: {
+    id: string;
+    name: string;
+    date: string | Date;
+    location: string | null;
+    type: string;
+  };
+}
 
 interface CustomerDetailClientProps {
   customer: Customer & {
@@ -45,11 +66,47 @@ interface CustomerDetailClientProps {
     interactions: any[];
     requests: any[];
     sites: any[];
+    eventCustomers?: EventCustomerEntry[];
   };
+  repId?: string;
+  allEvents?: Array<{
+    id: string;
+    name: string;
+    date: string | Date;
+    location: string | null;
+    type: string;
+  }>;
 }
 
-export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  "delta-center": "Delta Center Suite",
+  theater: "Hale Center Theater",
+  golf: "Golf Outing",
+  dinner: "Dinner",
+  "client-appreciation": "Client Appreciation",
+  conference: "Conference",
+  other: "Other",
+};
+
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  "delta-center": "bg-blue-100 text-blue-700 border-blue-200",
+  theater: "bg-purple-100 text-purple-700 border-purple-200",
+  golf: "bg-green-100 text-green-700 border-green-200",
+  dinner: "bg-orange-100 text-orange-700 border-orange-200",
+  "client-appreciation": "bg-pink-100 text-pink-700 border-pink-200",
+  conference: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  other: "bg-gray-100 text-gray-700 border-gray-200",
+};
+
+export function CustomerDetailClient({
+  customer,
+  repId,
+  allEvents = [],
+}: CustomerDetailClientProps) {
   const [showEdit, setShowEdit] = useState(false);
+  const [showLogInteraction, setShowLogInteraction] = useState(false);
+  const [showScheduleVisit, setShowScheduleVisit] = useState(false);
+  const [showAddToEvent, setShowAddToEvent] = useState(false);
   const [scoring, setScoring] = useState(false);
   const router = useRouter();
 
@@ -70,6 +127,16 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
       setScoring(false);
     }
   };
+
+  const handleAttendance = async (
+    eventId: string,
+    attended: boolean
+  ) => {
+    await updateAttendance(eventId, customer.id, attended);
+    router.refresh();
+  };
+
+  const eventCustomers = customer.eventCustomers ?? [];
 
   return (
     <div className="flex-1 overflow-auto p-6 space-y-6">
@@ -115,12 +182,37 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 justify-end">
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-[#1B4F8A] hover:bg-[#163d6b]"
+                onClick={() => setShowLogInteraction(true)}
+              >
+                <MessageSquarePlus className="h-4 w-4 mr-2" />
+                Log Interaction
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowScheduleVisit(true)}
+              >
+                <CalendarPlus className="h-4 w-4 mr-2" />
+                Schedule Visit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddToEvent(true)}
+              >
+                <PartyPopper className="h-4 w-4 mr-2" />
+                Add to Event
+              </Button>
               <Button variant="outline" size="sm" onClick={handleScore} disabled={scoring}>
                 <Brain className={`h-4 w-4 mr-2 ${scoring ? "animate-pulse" : ""}`} />
                 {scoring ? "Scoring..." : "Re-score"}
               </Button>
-              <Button size="sm" onClick={() => setShowEdit(true)}>
+              <Button size="sm" variant="ghost" onClick={() => setShowEdit(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
@@ -266,6 +358,12 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
                 <p className="text-sm">{customer.industry}</p>
               </div>
             )}
+            {(customer as any).visitFrequency && (
+              <div>
+                <p className="text-xs text-muted-foreground">Visit Frequency</p>
+                <p className="text-sm capitalize">{(customer as any).visitFrequency}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -279,6 +377,9 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
           <TabsTrigger value="visits">
             Visits ({customer.visits?.length ?? 0})
           </TabsTrigger>
+          <TabsTrigger value="events">
+            Events ({eventCustomers.length})
+          </TabsTrigger>
           <TabsTrigger value="requests">
             Requests ({customer.requests?.length ?? 0})
           </TabsTrigger>
@@ -291,9 +392,17 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
           <Card>
             <CardContent className="p-0">
               {customer.interactions?.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground text-sm">
-                  No interactions logged
-                </p>
+                <div className="text-center py-8 text-muted-foreground text-sm space-y-3">
+                  <p>No interactions logged</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowLogInteraction(true)}
+                  >
+                    <MessageSquarePlus className="h-4 w-4 mr-2" />
+                    Log First Interaction
+                  </Button>
+                </div>
               ) : (
                 <div className="divide-y">
                   {customer.interactions?.map((i: any) => (
@@ -312,6 +421,21 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
                       {i.notes && (
                         <p className="text-xs text-muted-foreground mt-1">{i.notes}</p>
                       )}
+                      {i.outcome && (
+                        <p className="text-xs text-green-700 mt-1">
+                          Outcome: {i.outcome}
+                        </p>
+                      )}
+                      {i.rep && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          By: {i.rep.fullName}
+                        </p>
+                      )}
+                      {i.nextFollowUpDate && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Follow-up: {formatDate(i.nextFollowUpDate)}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -324,18 +448,33 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
           <Card>
             <CardContent className="p-0">
               {customer.visits?.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground text-sm">
-                  No visits recorded
-                </p>
+                <div className="text-center py-8 text-muted-foreground text-sm space-y-3">
+                  <p>No visits recorded</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowScheduleVisit(true)}
+                  >
+                    <CalendarPlus className="h-4 w-4 mr-2" />
+                    Schedule First Visit
+                  </Button>
+                </div>
               ) : (
                 <div className="divide-y">
                   {customer.visits?.map((v: any) => (
                     <div key={v.id} className="px-4 py-3 flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium capitalize">{v.visitType}</p>
+                        <p className="text-sm font-medium capitalize">
+                          {v.visitType.replace("-", " ")}
+                        </p>
                         {v.employee && (
                           <p className="text-xs text-muted-foreground">
                             {v.employee.fullName}
+                          </p>
+                        )}
+                        {v.notes && (
+                          <p className="text-xs text-muted-foreground italic mt-1">
+                            {v.notes}
                           </p>
                         )}
                       </div>
@@ -347,6 +486,85 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
                         >
                           {v.status}
                         </Badge>
+                        {v.customerRating && (
+                          <p className="text-xs text-amber-500 mt-1">
+                            {"★".repeat(v.customerRating)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="events">
+          <Card>
+            <CardContent className="p-0">
+              {eventCustomers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm space-y-3">
+                  <p>Not invited to any events yet</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowAddToEvent(true)}
+                  >
+                    <PartyPopper className="h-4 w-4 mr-2" />
+                    Add to Event
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {eventCustomers.map((ec) => (
+                    <div key={ec.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-medium">{ec.event.name}</p>
+                            <Badge
+                              className={`text-xs border ${EVENT_TYPE_COLORS[ec.event.type] ?? EVENT_TYPE_COLORS.other}`}
+                            >
+                              {EVENT_TYPE_LABELS[ec.event.type] ?? ec.event.type}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {formatDate(ec.event.date)}
+                            </span>
+                            {ec.event.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {ec.event.location}
+                              </span>
+                            )}
+                          </div>
+                          {ec.notes && (
+                            <p className="text-xs text-muted-foreground italic mt-1">
+                              {ec.notes}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() =>
+                            handleAttendance(ec.event.id, !ec.attended)
+                          }
+                          className="flex items-center gap-1 text-sm"
+                        >
+                          {ec.attended ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span className="text-green-600 text-xs">Attended</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-4 w-4 text-gray-400" />
+                              <span className="text-gray-400 text-xs">Invited</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -404,6 +622,11 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
                           {s.sqft.toLocaleString()} sq ft
                         </p>
                       )}
+                      {s.visitFrequency && (
+                        <p className="text-xs text-muted-foreground">
+                          Visit frequency: {s.visitFrequency}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -431,6 +654,38 @@ export function CustomerDetailClient({ customer }: CustomerDetailClientProps) {
           router.refresh();
         }}
         customer={customer}
+      />
+
+      {repId && (
+        <LogInteractionDialog
+          open={showLogInteraction}
+          onClose={() => {
+            setShowLogInteraction(false);
+            router.refresh();
+          }}
+          customerId={customer.id}
+          repId={repId}
+        />
+      )}
+
+      <ScheduleVisitDialog
+        open={showScheduleVisit}
+        onClose={() => {
+          setShowScheduleVisit(false);
+          router.refresh();
+        }}
+        customerId={customer.id}
+        sites={customer.sites}
+      />
+
+      <AddToEventDialog
+        open={showAddToEvent}
+        onClose={() => {
+          setShowAddToEvent(false);
+          router.refresh();
+        }}
+        customerId={customer.id}
+        events={allEvents}
       />
     </div>
   );

@@ -17,6 +17,7 @@ CREATE TYPE request_status AS ENUM ('open', 'in-review', 'resolved', 'closed');
 CREATE TYPE interaction_type AS ENUM ('call', 'email', 'meeting', 'demo', 'proposal', 'follow-up', 'other');
 CREATE TYPE visit_status AS ENUM ('scheduled', 'completed', 'missed', 'cancelled');
 CREATE TYPE employee_status AS ENUM ('active', 'inactive');
+CREATE TYPE event_type AS ENUM ('delta-center', 'theater', 'golf', 'dinner', 'client-appreciation', 'conference', 'other');
 
 -- ─── Profiles ───────────────────────────────────────────────
 CREATE TABLE profiles (
@@ -74,6 +75,8 @@ CREATE TABLE customers (
   ai_notes                TEXT,
   last_score_at           TIMESTAMPTZ,
   notes                   TEXT,
+  visit_frequency         TEXT,
+  risk_threshold_days     INTEGER DEFAULT 90,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -184,6 +187,39 @@ CREATE TABLE tasks (
 CREATE INDEX tasks_status_idx ON tasks(status);
 CREATE INDEX tasks_assigned_idx ON tasks(assigned_to_id);
 
+-- ─── Events ─────────────────────────────────────────────────
+CREATE TABLE events (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name          TEXT NOT NULL,
+  date          TIMESTAMPTZ NOT NULL,
+  location      TEXT,
+  type          event_type NOT NULL DEFAULT 'other',
+  notes         TEXT,
+  created_by_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ─── Event Customers (many-to-many) ─────────────────────────
+CREATE TABLE event_customers (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id    UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+  attended    BOOLEAN DEFAULT FALSE,
+  notes       TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ─── Event Attendees ─────────────────────────────────────────
+CREATE TABLE event_attendees (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id    UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  profile_id  UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  type        TEXT NOT NULL DEFAULT 'employee',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ─── Row Level Security ──────────────────────────────────────
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
@@ -193,6 +229,9 @@ ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_interactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_attendees ENABLE ROW LEVEL SECURITY;
 
 -- Helper function to get current user role
 CREATE OR REPLACE FUNCTION get_user_role()
@@ -230,6 +269,12 @@ CREATE POLICY "employees_staff" ON employees FOR ALL
   USING (get_user_role() IN ('admin', 'sales', 'building-ops'));
 CREATE POLICY "tasks_staff" ON tasks FOR ALL
   USING (get_user_role() IN ('admin', 'sales', 'building-ops'));
+CREATE POLICY "events_staff" ON events FOR ALL
+  USING (get_user_role() IN ('admin', 'sales', 'building-ops'));
+CREATE POLICY "event_customers_staff" ON event_customers FOR ALL
+  USING (get_user_role() IN ('admin', 'sales', 'building-ops'));
+CREATE POLICY "event_attendees_staff" ON event_attendees FOR ALL
+  USING (get_user_role() IN ('admin', 'sales', 'building-ops'));
 
 -- ─── Updated At Triggers ─────────────────────────────────────
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -246,4 +291,6 @@ CREATE TRIGGER trg_employees_updated_at BEFORE UPDATE ON employees
 CREATE TRIGGER trg_requests_updated_at BEFORE UPDATE ON customer_requests
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_tasks_updated_at BEFORE UPDATE ON tasks
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER trg_events_updated_at BEFORE UPDATE ON events
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();

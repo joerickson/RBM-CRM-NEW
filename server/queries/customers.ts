@@ -52,6 +52,11 @@ export async function getCustomerById(id: string) {
         orderBy: (r, { desc }) => [desc(r.createdAt)],
         limit: 10,
       },
+      eventCustomers: {
+        with: { event: true },
+        orderBy: (ec, { desc }) => [desc(ec.createdAt)],
+        limit: 20,
+      },
     },
   });
 }

@@ -88,6 +88,16 @@ export const employeeStatusEnum = pgEnum("employee_status", [
   "inactive",
 ]);
 
+export const eventTypeEnum = pgEnum("event_type", [
+  "delta-center",
+  "theater",
+  "golf",
+  "dinner",
+  "client-appreciation",
+  "conference",
+  "other",
+]);
+
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 export const profiles = pgTable("profiles", {
@@ -136,6 +146,8 @@ export const customers = pgTable(
     aiNotes: text("ai_notes"),
     lastScoreAt: timestamp("last_score_at", { withTimezone: true }),
     notes: text("notes"),
+    visitFrequency: text("visit_frequency"),
+    riskThresholdDays: integer("risk_threshold_days").default(90),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -306,6 +318,54 @@ export const tasks = pgTable(
   })
 );
 
+export const events = pgTable("events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  date: timestamp("date", { withTimezone: true }).notNull(),
+  location: text("location"),
+  type: eventTypeEnum("type").notNull().default("other"),
+  notes: text("notes"),
+  createdById: uuid("created_by_id").references(() => profiles.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const eventCustomers = pgTable("event_customers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  customerId: uuid("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  attended: boolean("attended").default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const eventAttendees = pgTable("event_attendees", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").references(() => profiles.id, {
+    onDelete: "cascade",
+  }),
+  name: text("name").notNull(),
+  type: text("type").notNull().default("employee"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const profilesRelations = relations(profiles, ({ many }) => ({
@@ -325,6 +385,7 @@ export const customersRelations = relations(customers, ({ one, many }) => ({
   interactions: many(customerInteractions),
   requests: many(customerRequests),
   tasks: many(tasks),
+  eventCustomers: many(eventCustomers),
 }));
 
 export const customerSitesRelations = relations(
@@ -402,4 +463,35 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
     references: [profiles.id],
   }),
   visits: many(visits),
+}));
+
+export const eventsRelations = relations(events, ({ one, many }) => ({
+  createdBy: one(profiles, {
+    fields: [events.createdById],
+    references: [profiles.id],
+  }),
+  eventCustomers: many(eventCustomers),
+  eventAttendees: many(eventAttendees),
+}));
+
+export const eventCustomersRelations = relations(eventCustomers, ({ one }) => ({
+  event: one(events, {
+    fields: [eventCustomers.eventId],
+    references: [events.id],
+  }),
+  customer: one(customers, {
+    fields: [eventCustomers.customerId],
+    references: [customers.id],
+  }),
+}));
+
+export const eventAttendeesRelations = relations(eventAttendees, ({ one }) => ({
+  event: one(events, {
+    fields: [eventAttendees.eventId],
+    references: [events.id],
+  }),
+  profile: one(profiles, {
+    fields: [eventAttendees.profileId],
+    references: [profiles.id],
+  }),
 }));
