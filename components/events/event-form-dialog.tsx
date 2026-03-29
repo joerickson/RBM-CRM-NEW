@@ -80,7 +80,6 @@ export function EventFormDialog({
     register,
     handleSubmit,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<FormData>({
@@ -95,8 +94,6 @@ export function EventFormDialog({
           company: event.company ?? "",
           totalTickets: event.totalTickets ?? 0,
           totalParkingPasses: event.totalParkingPasses ?? 0,
-          ticketsSent: event.ticketsSent ?? false,
-          parkingSent: event.parkingSent ?? false,
           notes: event.notes ?? "",
         }
       : {
@@ -104,13 +101,8 @@ export function EventFormDialog({
           eventTypeId: activeTypes[0]?.id ?? null,
           totalTickets: 0,
           totalParkingPasses: 0,
-          ticketsSent: false,
-          parkingSent: false,
         },
   });
-
-  const ticketsSent = watch("ticketsSent");
-  const parkingSent = watch("parkingSent");
 
   const handleDelete = async () => {
     if (!event) return;
@@ -259,30 +251,6 @@ export function EventFormDialog({
                 placeholder="0"
                 {...register("totalParkingPasses")}
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="ticketsSent"
-                className="h-4 w-4 rounded border-gray-300"
-                checked={ticketsSent}
-                onChange={(e) => setValue("ticketsSent", e.target.checked)}
-              />
-              <Label htmlFor="ticketsSent" className="text-xs cursor-pointer">
-                Tickets Sent
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="parkingSent"
-                className="h-4 w-4 rounded border-gray-300"
-                checked={parkingSent}
-                onChange={(e) => setValue("parkingSent", e.target.checked)}
-              />
-              <Label htmlFor="parkingSent" className="text-xs cursor-pointer">
-                Parking Sent
-              </Label>
             </div>
           </div>
 
