@@ -28,6 +28,7 @@ interface EventAttendee {
   id: string;
   name: string;
   email: string | null;
+  company: string | null;
   ticketsAssigned: number;
   parkingAssigned: number;
 }
@@ -71,6 +72,7 @@ function getColorBadge(color: string) {
 type AttendeeRow = {
   key: string;
   name: string;
+  company: string | null;
   subtitle: string;
   isCustomer: boolean;
 };
@@ -87,18 +89,20 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
           seen.set(key, {
             key,
             name: ec.customer.primaryContactName ?? ec.customer.companyName,
+            company: ec.customer.companyName,
             subtitle: ec.customer.companyName,
             isCustomer: true,
           });
         }
       }
       for (const ea of evt.eventAttendees) {
-        const key = `attendee-${ea.name}-${ea.email ?? ""}`;
+        const key = `attendee-${ea.name}-${ea.company ?? ""}`;
         if (!seen.has(key)) {
           seen.set(key, {
             key,
             name: ea.name,
-            subtitle: ea.email ?? "Guest",
+            company: ea.company ?? null,
+            subtitle: ea.company ?? "",
             isCustomer: false,
           });
         }
@@ -214,8 +218,16 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
               className={`border-b hover:bg-gray-50 ${rowIdx % 2 === 0 ? "" : "bg-gray-50/50"}`}
             >
               <td className="sticky left-0 z-10 bg-inherit border-r px-4 py-3 min-w-[200px]">
-                <p className="text-sm font-medium">{row.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{row.subtitle}</p>
+                <p className="text-sm font-medium">
+                  {row.isCustomer
+                    ? row.name
+                    : row.company
+                      ? `${row.name} - ${row.company}`
+                      : row.name}
+                </p>
+                {row.isCustomer && (
+                  <p className="text-xs text-muted-foreground truncate">{row.subtitle}</p>
+                )}
                 {!row.isCustomer && (
                   <span className="text-xs text-purple-600 font-medium">Guest</span>
                 )}
