@@ -1,9 +1,9 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 
 export async function syncClerkUserToSupabase() {
   const user = await currentUser();
@@ -24,6 +24,7 @@ export async function syncClerkUserToSupabase() {
   const [profile] = await db
     .insert(profiles)
     .values({
+      id: randomUUID(),
       clerkId: user.id,
       email,
       fullName,
