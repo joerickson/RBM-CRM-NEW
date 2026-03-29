@@ -109,6 +109,22 @@ DROP POLICY IF EXISTS "event_attendees_staff"     ON event_attendees;
 DROP POLICY IF EXISTS "requests_staff_select"     ON customer_requests;
 DROP POLICY IF EXISTS "requests_staff_update"     ON customer_requests;
 
+-- Drop new policies too so this script is safe to re-run
+DROP POLICY IF EXISTS "customers_manager_all"     ON customers;
+DROP POLICY IF EXISTS "customers_rep_own"         ON customers;
+DROP POLICY IF EXISTS "sites_manager_all"         ON customer_sites;
+DROP POLICY IF EXISTS "sites_rep_own"             ON customer_sites;
+DROP POLICY IF EXISTS "interactions_manager_all"  ON customer_interactions;
+DROP POLICY IF EXISTS "interactions_rep_own"      ON customer_interactions;
+DROP POLICY IF EXISTS "visits_manager_all"        ON visits;
+DROP POLICY IF EXISTS "visits_rep_own"            ON visits;
+DROP POLICY IF EXISTS "tasks_manager_all"         ON tasks;
+DROP POLICY IF EXISTS "tasks_rep_own"             ON tasks;
+DROP POLICY IF EXISTS "requests_insert_anon"      ON customer_requests;
+DROP POLICY IF EXISTS "requests_manager_select"   ON customer_requests;
+DROP POLICY IF EXISTS "requests_manager_update"   ON customer_requests;
+DROP POLICY IF EXISTS "requests_rep_own"          ON customer_requests;
+
 -- ─── 6. New role-aware RLS policies ──────────────────────────
 
 -- ── Customers ──
