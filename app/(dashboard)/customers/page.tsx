@@ -10,6 +10,7 @@ import {
 } from "@/server/queries/settings";
 import { getCurrentProfile } from "@/lib/auth/get-current-profile";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync-user";
+import { getSalesRepProfiles, getOpsManagerProfiles } from "@/server/queries/profiles";
 
 export default async function CustomersPage({
   searchParams,
@@ -27,12 +28,14 @@ export default async function CustomersPage({
     ? { role: profile.role as any, clerkId: profile.clerkId }
     : undefined;
 
-  const [customers, customerStatuses, industriesList, visitFrequenciesList] =
+  const [customers, customerStatuses, industriesList, visitFrequenciesList, salesRepsList, opsManagersList] =
     await Promise.all([
       getAllCustomers(params, ctx),
       getAllCustomerStatuses(),
       getAllIndustries(),
       getAllVisitFrequencies(),
+      getSalesRepProfiles(),
+      getOpsManagerProfiles(),
     ]);
 
   return (
@@ -43,6 +46,8 @@ export default async function CustomersPage({
         customerStatuses={customerStatuses as any}
         industries={industriesList as any}
         visitFrequencies={visitFrequenciesList as any}
+        salesReps={salesRepsList}
+        opsManagers={opsManagersList}
       />
     </div>
   );

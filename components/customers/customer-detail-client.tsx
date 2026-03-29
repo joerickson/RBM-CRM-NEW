@@ -63,6 +63,11 @@ interface EventCustomerEntry {
   };
 }
 
+interface UserOption {
+  clerkId: string | null;
+  fullName: string | null;
+}
+
 interface CustomerDetailClientProps {
   customer: Customer & {
     visits: any[];
@@ -83,6 +88,8 @@ interface CustomerDetailClientProps {
   customerStatuses?: { id: string; name: string }[];
   industries?: { id: string; name: string }[];
   visitFrequencies?: { id: string; name: string }[];
+  salesReps?: UserOption[];
+  opsManagers?: UserOption[];
 }
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -113,6 +120,8 @@ export function CustomerDetailClient({
   customerStatuses = [],
   industries = [],
   visitFrequencies = [],
+  salesReps = [],
+  opsManagers = [],
 }: CustomerDetailClientProps) {
   const [showEdit, setShowEdit] = useState(false);
   const [showLogInteraction, setShowLogInteraction] = useState(false);
@@ -192,6 +201,24 @@ export function CustomerDetailClient({
                     Contract ends: {formatDate(customer.contractEndDate)}
                   </span>
                 )}
+                {(() => {
+                  const salesRepClerkId = (customer as any).assignedSalesRepClerkId;
+                  const opsManagerClerkId = (customer as any).assignedOperationsManagerClerkId;
+                  const salesRep = salesRepClerkId
+                    ? salesReps.find((u) => u.clerkId === salesRepClerkId)
+                    : null;
+                  const opsManager = opsManagerClerkId
+                    ? opsManagers.find((u) => u.clerkId === opsManagerClerkId)
+                    : null;
+                  if (!salesRep && !opsManager) return null;
+                  return (
+                    <span className="flex items-center gap-1">
+                      {salesRep && <span>Sales: {salesRep.fullName}</span>}
+                      {salesRep && opsManager && <span>|</span>}
+                      {opsManager && <span>Ops: {opsManager.fullName}</span>}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
@@ -691,6 +718,8 @@ export function CustomerDetailClient({
         customerStatuses={customerStatuses}
         industries={industries}
         visitFrequencies={visitFrequencies}
+        salesReps={salesReps}
+        opsManagers={opsManagers}
       />
 
       {repId && (

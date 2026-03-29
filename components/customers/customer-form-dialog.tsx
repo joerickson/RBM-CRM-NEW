@@ -31,6 +31,11 @@ interface LookupItem {
   name: string;
 }
 
+interface UserOption {
+  clerkId: string | null;
+  fullName: string | null;
+}
+
 interface CustomerFormDialogProps {
   open: boolean;
   onClose: () => void;
@@ -38,7 +43,11 @@ interface CustomerFormDialogProps {
   customerStatuses?: LookupItem[];
   industries?: LookupItem[];
   visitFrequencies?: LookupItem[];
+  salesReps?: UserOption[];
+  opsManagers?: UserOption[];
 }
+
+const OPS_VISIBLE_STATUSES = ["active", "won", "at-risk"];
 
 export function CustomerFormDialog({
   open,
@@ -47,6 +56,8 @@ export function CustomerFormDialog({
   customerStatuses = [],
   industries = [],
   visitFrequencies = [],
+  salesReps = [],
+  opsManagers = [],
 }: CustomerFormDialogProps) {
   const [loading, setLoading] = useState(false);
 
@@ -69,8 +80,13 @@ export function CustomerFormDialog({
       notes: customer?.notes ?? "",
       visitFrequency: (customer as any)?.visitFrequency ?? "",
       riskThresholdDays: (customer as any)?.riskThresholdDays ?? 90,
+      assignedSalesRepClerkId: (customer as any)?.assignedSalesRepClerkId ?? null,
+      assignedOperationsManagerClerkId: (customer as any)?.assignedOperationsManagerClerkId ?? null,
     },
   });
+
+  const currentStatus = form.watch("status");
+  const showOpsManager = OPS_VISIBLE_STATUSES.includes(currentStatus?.toLowerCase() ?? "");
 
   async function onSubmit(data: CustomerInput) {
     setLoading(true);
@@ -285,6 +301,58 @@ export function CustomerFormDialog({
                 placeholder="90"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Assigned Sales Rep</Label>
+              <Select
+                value={form.watch("assignedSalesRepClerkId" as any) || "none"}
+                onValueChange={(v) =>
+                  form.setValue("assignedSalesRepClerkId" as any, v === "none" ? null : v)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sales rep" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Not assigned</SelectItem>
+                  {salesReps.map((u) =>
+                    u.clerkId ? (
+                      <SelectItem key={u.clerkId} value={u.clerkId}>
+                        {u.fullName ?? u.clerkId}
+                      </SelectItem>
+                    ) : null
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {showOpsManager && (
+              <div>
+                <Label>Assigned Operations Manager</Label>
+                <Select
+                  value={form.watch("assignedOperationsManagerClerkId" as any) || "none"}
+                  onValueChange={(v) =>
+                    form.setValue("assignedOperationsManagerClerkId" as any, v === "none" ? null : v)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ops manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not assigned</SelectItem>
+                    {opsManagers.map((u) =>
+                      u.clerkId ? (
+                        <SelectItem key={u.clerkId} value={u.clerkId}>
+                          {u.fullName ?? u.clerkId}
+                        </SelectItem>
+                      ) : null
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div>

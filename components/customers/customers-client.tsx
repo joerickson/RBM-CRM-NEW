@@ -32,11 +32,18 @@ interface LookupItem {
   name: string;
 }
 
+interface UserOption {
+  clerkId: string | null;
+  fullName: string | null;
+}
+
 interface CustomersClientProps {
   initialCustomers: Customer[];
   customerStatuses?: LookupItem[];
   industries?: LookupItem[];
   visitFrequencies?: LookupItem[];
+  salesReps?: UserOption[];
+  opsManagers?: UserOption[];
 }
 
 export function CustomersClient({
@@ -44,6 +51,8 @@ export function CustomersClient({
   customerStatuses = [],
   industries = [],
   visitFrequencies = [],
+  salesReps = [],
+  opsManagers = [],
 }: CustomersClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -212,6 +221,8 @@ export function CustomersClient({
         customerStatuses={customerStatuses}
         industries={industries}
         visitFrequencies={visitFrequencies}
+        salesReps={salesReps}
+        opsManagers={opsManagers}
       />
       <BulkImportDialog
         open={showImport}
