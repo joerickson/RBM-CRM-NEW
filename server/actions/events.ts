@@ -8,6 +8,7 @@ import {
   eventTypes,
   attendees,
   customers,
+  employees,
 } from "@/lib/db/schema";
 import { eq, and, ilike, or, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -201,6 +202,7 @@ export async function addAttendeeToEvent(
           email: validated.data.email ?? null,
           phone: validated.data.phone ?? null,
           company: validated.data.company ?? null,
+          notes: validated.data.notes ?? null,
         })
         .returning();
       attendeeId = newAttendee.id;
@@ -330,7 +332,7 @@ export async function searchAttendeesAndCustomers(query: string) {
   if (!query || query.length < 2) return { data: [] };
 
   try {
-    const [customerResults, attendeeResults] = await Promise.all([
+    const [customerResults, attendeeResults, employeeResults] = await Promise.all([
       db.query.customers.findMany({
         where: or(
           ilike(customers.companyName, `%${query}%`),
@@ -353,6 +355,16 @@ export async function searchAttendeesAndCustomers(query: string) {
         orderBy: [desc(attendees.attendanceCount)],
         limit: 5,
       }),
+      db.query.employees.findMany({
+        where: ilike(employees.fullName, `%${query}%`),
+        columns: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+        },
+        limit: 5,
+      }),
     ]);
 
     const results = [
@@ -365,6 +377,7 @@ export async function searchAttendeesAndCustomers(query: string) {
         type: "customer" as const,
         customerId: c.id,
         attendeeId: null as string | null,
+        employeeId: null as string | null,
       })),
       ...attendeeResults.map((a) => ({
         id: a.id,
@@ -375,6 +388,18 @@ export async function searchAttendeesAndCustomers(query: string) {
         type: "attendee" as const,
         customerId: null as string | null,
         attendeeId: a.id,
+        employeeId: null as string | null,
+      })),
+      ...employeeResults.map((e) => ({
+        id: e.id,
+        name: e.fullName,
+        company: null as string | null,
+        email: e.email,
+        phone: e.phone,
+        type: "employee" as const,
+        customerId: null as string | null,
+        attendeeId: null as string | null,
+        employeeId: e.id,
       })),
     ];
 

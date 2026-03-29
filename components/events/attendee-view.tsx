@@ -29,6 +29,7 @@ interface EventAttendee {
   name: string;
   email: string | null;
   company: string | null;
+  type: string;
   ticketsAssigned: number;
   parkingAssigned: number;
 }
@@ -73,8 +74,8 @@ type AttendeeRow = {
   key: string;
   name: string;
   company: string | null;
-  subtitle: string;
-  isCustomer: boolean;
+  displayName: string;
+  type: "customer" | "attendee" | "employee";
 };
 
 export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
@@ -86,24 +87,33 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
       for (const ec of evt.eventCustomers) {
         const key = `customer-${ec.customerId}`;
         if (!seen.has(key)) {
+          const contactName = ec.customer.primaryContactName ?? ec.customer.companyName;
+          const company = ec.customer.companyName;
           seen.set(key, {
             key,
-            name: ec.customer.primaryContactName ?? ec.customer.companyName,
-            company: ec.customer.companyName,
-            subtitle: ec.customer.companyName,
-            isCustomer: true,
+            name: contactName,
+            company,
+            displayName: `${contactName} — ${company}`,
+            type: "customer",
           });
         }
       }
       for (const ea of evt.eventAttendees) {
-        const key = `attendee-${ea.name}-${ea.company ?? ""}`;
+        const rowType = ea.type === "employee" ? "employee" : "attendee";
+        const key = `${rowType}-${ea.name}`;
         if (!seen.has(key)) {
+          const displayName =
+            rowType === "employee"
+              ? `${ea.name} — Employee`
+              : ea.company
+              ? `${ea.name} — ${ea.company}`
+              : ea.name;
           seen.set(key, {
             key,
             name: ea.name,
             company: ea.company ?? null,
-            subtitle: ea.company ?? "",
-            isCustomer: false,
+            displayName,
+            type: rowType,
           });
         }
       }
@@ -113,14 +123,15 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
   }, [events]);
 
   function getCellForAttendee(event: Event, row: AttendeeRow) {
-    if (row.isCustomer) {
+    if (row.type === "customer") {
       const customerId = row.key.replace("customer-", "");
       const ec = event.eventCustomers.find((c) => c.customerId === customerId);
       if (!ec) return null;
       return { tickets: ec.ticketsAssigned, parking: ec.parkingAssigned, attended: ec.attended };
     } else {
-      const name = row.name;
-      const ea = event.eventAttendees.find((a) => a.name === name);
+      const ea = event.eventAttendees.find(
+        (a) => a.name === row.name && (row.type === "employee" ? a.type === "employee" : a.type !== "employee")
+      );
       if (!ea) return null;
       return { tickets: ea.ticketsAssigned, parking: ea.parkingAssigned, attended: null };
     }
@@ -218,17 +229,14 @@ export function AttendeeView({ events, onEventClick }: AttendeeViewProps) {
               className={`border-b hover:bg-gray-50 ${rowIdx % 2 === 0 ? "" : "bg-gray-50/50"}`}
             >
               <td className="sticky left-0 z-10 bg-inherit border-r px-4 py-3 min-w-[200px]">
-                <p className="text-sm font-medium">
-                  {row.isCustomer
-                    ? row.name
-                    : row.company
-                      ? `${row.name} - ${row.company}`
-                      : row.name}
-                </p>
-                {row.isCustomer && (
-                  <p className="text-xs text-muted-foreground truncate">{row.subtitle}</p>
+                <p className="text-sm font-medium truncate">{row.displayName}</p>
+                {row.type === "customer" && (
+                  <span className="text-xs text-blue-600 font-medium">Customer</span>
                 )}
-                {!row.isCustomer && (
+                {row.type === "employee" && (
+                  <span className="text-xs text-orange-600 font-medium">Employee</span>
+                )}
+                {row.type === "attendee" && (
                   <span className="text-xs text-purple-600 font-medium">Guest</span>
                 )}
               </td>
