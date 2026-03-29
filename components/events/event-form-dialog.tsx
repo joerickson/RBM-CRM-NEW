@@ -214,14 +214,14 @@ export function EventFormDialog({
             <div className="space-y-1">
               <Label>Company</Label>
               <Select
-                defaultValue={event?.company ?? ""}
-                onValueChange={(v) => setValue("company", v)}
+                defaultValue={event?.company ?? "__none__"}
+                onValueChange={(v) => setValue("company", v === "__none__" ? null : v)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select company" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— None —</SelectItem>
+                  <SelectItem value="__none__">— None —</SelectItem>
                   {COMPANIES.map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
