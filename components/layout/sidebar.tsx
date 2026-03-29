@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignOutButton } from "@clerk/nextjs";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -14,7 +15,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { signOut } from "@/server/actions/auth";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -69,16 +69,16 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t p-4">
-        <form action={signOut}>
+        <SignOutButton redirectUrl="/login">
           <Button
-            type="submit"
+            type="button"
             variant="ghost"
             className="w-full justify-start gap-3 text-gray-600"
           >
             <LogOut className="h-4 w-4" />
             Sign Out
           </Button>
-        </form>
+        </SignOutButton>
       </div>
     </aside>
   );

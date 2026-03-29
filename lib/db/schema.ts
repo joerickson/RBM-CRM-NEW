@@ -91,7 +91,8 @@ export const employeeStatusEnum = pgEnum("employee_status", [
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey(), // matches auth.users.id
+  id: uuid("id").primaryKey().defaultRandom(),
+  clerkId: text("clerk_id").unique(),
   email: text("email").notNull().unique(),
   fullName: text("full_name"),
   role: userRoleEnum("role").notNull().default("sales"),
