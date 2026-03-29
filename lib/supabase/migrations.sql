@@ -53,6 +53,10 @@ CREATE TABLE IF NOT EXISTS event_customers (
 ALTER TABLE event_customers
   ADD COLUMN IF NOT EXISTS attended BOOLEAN DEFAULT FALSE;
 
+-- Add notes column if table existed without it
+ALTER TABLE event_customers
+  ADD COLUMN IF NOT EXISTS notes TEXT;
+
 -- Create event_attendees table
 CREATE TABLE IF NOT EXISTS event_attendees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
