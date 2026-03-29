@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Brand, SalesStage, CustomerStatus } from "@/types";
+import { Brand, SalesStage } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -61,7 +61,7 @@ export const STAGE_LABELS: Record<SalesStage, string> = {
   "closed-lost": "Closed Lost",
 };
 
-export const STATUS_LABELS: Record<CustomerStatus, string> = {
+export const STATUS_LABELS: Record<string, string> = {
   lead: "Lead",
   prospect: "Prospect",
   active: "Active",
@@ -69,7 +69,7 @@ export const STATUS_LABELS: Record<CustomerStatus, string> = {
   churned: "Churned",
 };
 
-export const STATUS_COLORS: Record<CustomerStatus, string> = {
+export const STATUS_COLORS: Record<string, string> = {
   lead: "bg-slate-100 text-slate-700",
   prospect: "bg-blue-100 text-blue-700",
   active: "bg-green-100 text-green-700",

@@ -28,7 +28,7 @@ const ALL_NAV_ITEMS = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare, roles: ["admin", "sales", "building-ops"] },
   { href: "/email-templates", label: "Email Templates", icon: Mail, roles: ["admin", "sales"] },
   { href: "/admin", label: "Admin", icon: Settings, roles: ["admin"] },
-  { href: "/admin/event-types", label: "Event Types", icon: Tag, roles: ["admin"] },
+  { href: "/admin/settings", label: "Settings", icon: Tag, roles: ["admin"] },
 ];
 
 interface SidebarProps {

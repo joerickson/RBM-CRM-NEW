@@ -85,6 +85,7 @@ interface Event {
 interface EventsClientProps {
   events: Event[];
   eventTypes: EventType[];
+  companies?: { id: string; name: string }[];
   repId?: string;
   userRole?: string;
   userCompany?: string;
@@ -139,6 +140,7 @@ function getEventTypeName(event: Event) {
 export function EventsClient({
   events,
   eventTypes,
+  companies = [],
   repId,
   userRole,
   userCompany,
@@ -377,6 +379,7 @@ export function EventsClient({
           router.refresh();
         }}
         eventTypes={eventTypes}
+        companies={companies}
         repId={repId}
       />
 
@@ -389,6 +392,7 @@ export function EventsClient({
           }}
           event={editEvent as any}
           eventTypes={eventTypes}
+          companies={companies}
           repId={repId}
         />
       )}

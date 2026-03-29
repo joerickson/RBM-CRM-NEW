@@ -32,16 +32,17 @@ interface LogInteractionDialogProps {
   onClose: () => void;
   customerId: string;
   repId: string;
+  interactionTypes?: { id: string; name: string }[];
 }
 
-const INTERACTION_TYPES = [
-  { value: "call", label: "Phone Call" },
-  { value: "email", label: "Email" },
-  { value: "meeting", label: "Meeting" },
-  { value: "demo", label: "Demo" },
-  { value: "proposal", label: "Proposal" },
-  { value: "follow-up", label: "Follow-up" },
-  { value: "other", label: "Other" },
+const DEFAULT_INTERACTION_TYPES = [
+  { id: "call", name: "Phone Call" },
+  { id: "email", name: "Email" },
+  { id: "meeting", name: "Meeting" },
+  { id: "demo", name: "Demo" },
+  { id: "proposal", name: "Proposal" },
+  { id: "follow-up", name: "Follow-up" },
+  { id: "other", name: "Other" },
 ];
 
 export function LogInteractionDialog({
@@ -49,7 +50,11 @@ export function LogInteractionDialog({
   onClose,
   customerId,
   repId,
+  interactionTypes = [],
 }: LogInteractionDialogProps) {
+  const typeOptions = interactionTypes.length > 0
+    ? interactionTypes.map((t) => ({ id: t.name, name: t.name }))
+    : DEFAULT_INTERACTION_TYPES;
   const [saving, setSaving] = useState(false);
 
   const {
@@ -103,9 +108,9 @@ export function LogInteractionDialog({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {INTERACTION_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
+                  {typeOptions.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

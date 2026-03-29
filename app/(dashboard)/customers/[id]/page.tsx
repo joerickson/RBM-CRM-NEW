@@ -4,6 +4,12 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { getCustomerById } from "@/server/queries/customers";
 import { getAllEvents } from "@/server/queries/events";
+import {
+  getAllInteractionTypes,
+  getAllCustomerStatuses,
+  getAllIndustries,
+  getAllVisitFrequencies,
+} from "@/server/queries/settings";
 import { CustomerDetailClient } from "@/components/customers/customer-detail-client";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
@@ -18,9 +24,13 @@ export default async function CustomerDetailPage({
   const { id } = await params;
   const { userId } = await auth();
 
-  const [customer, allEvents] = await Promise.all([
+  const [customer, allEvents, interactionTypesList, customerStatusesList, industriesList, visitFrequenciesList] = await Promise.all([
     getCustomerById(id),
     getAllEvents(),
+    getAllInteractionTypes(),
+    getAllCustomerStatuses(),
+    getAllIndustries(),
+    getAllVisitFrequencies(),
   ]);
 
   if (!customer) notFound();
@@ -46,6 +56,10 @@ export default async function CustomerDetailPage({
           location: e.location,
           type: e.type,
         }))}
+        interactionTypes={interactionTypesList as any}
+        customerStatuses={customerStatusesList as any}
+        industries={industriesList as any}
+        visitFrequencies={visitFrequenciesList as any}
       />
     </div>
   );

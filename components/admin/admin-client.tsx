@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Inbox, Users, AlertCircle, Tag } from "lucide-react";
+import { Inbox, Users, AlertCircle, Tag, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,12 +71,25 @@ export function AdminClient({ requests, allProfiles }: AdminClientProps) {
   return (
     <div className="flex-1 overflow-auto p-6 space-y-6">
       {/* Quick Links */}
-      <div className="flex gap-3">
-        <Link href="/admin/event-types">
+      <div className="flex gap-3 flex-wrap">
+        <Link href="/admin/settings">
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-9 w-9 rounded-full bg-purple-100 flex items-center justify-center">
-                <Tag className="h-4 w-4 text-purple-600" />
+                <Settings2 className="h-4 w-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Settings</p>
+                <p className="text-xs text-muted-foreground">Manage dropdown options</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/event-types">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center">
+                <Tag className="h-4 w-4 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm font-semibold">Event Types</p>
