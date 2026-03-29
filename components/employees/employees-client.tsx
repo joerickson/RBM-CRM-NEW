@@ -145,7 +145,8 @@ export function EmployeesClient({ initialEmployees }: EmployeesClientProps) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.02 }}
-                  className="hover:bg-gray-50"
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => openEdit(emp)}
                 >
                   <td className="px-4 py-3 font-medium">{emp.fullName}</td>
                   <td className="px-4 py-3 text-muted-foreground">{emp.role}</td>
@@ -168,19 +169,19 @@ export function EmployeesClient({ initialEmployees }: EmployeesClientProps) {
                       {emp.status}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1 justify-end">
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => openEdit(emp)}
+                        onClick={(e) => { e.stopPropagation(); openEdit(emp); }}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => handleDelete(emp.id)}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(emp.id); }}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />

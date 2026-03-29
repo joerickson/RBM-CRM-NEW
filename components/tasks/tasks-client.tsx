@@ -54,8 +54,14 @@ interface TasksClientProps {
 export function TasksClient({ initialTasks, currentUserId }: TasksClientProps) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
+
+  const editForm = useForm<TaskInput>({
+    resolver: zodResolver(taskSchema),
+  });
 
   const form = useForm<TaskInput>({
     resolver: zodResolver(taskSchema),
@@ -95,6 +101,34 @@ export function TasksClient({ initialTasks, currentUserId }: TasksClientProps) {
     if (!confirm("Delete this task?")) return;
     await deleteTask(id);
     router.refresh();
+  };
+
+  const openEditTask = (task: Task) => {
+    setEditingTask(task);
+    editForm.reset({
+      title: task.title,
+      description: task.description ?? "",
+      priority: task.priority,
+      status: task.status,
+      dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split("T")[0] : task.dueDate ?? "",
+    });
+  };
+
+  const onEditSubmit = async (data: TaskInput) => {
+    if (!editingTask) return;
+    setEditLoading(true);
+    try {
+      const result = await updateTask(editingTask.id, data);
+      if (result?.error) {
+        toast({ title: "Error", description: result.error, variant: "destructive" });
+      } else {
+        toast({ title: "Task updated" });
+        setEditingTask(null);
+        router.refresh();
+      }
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const counts = {
@@ -140,17 +174,16 @@ export function TasksClient({ initialTasks, currentUserId }: TasksClientProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03 }}
                 className={cn(
-                  "flex items-start gap-3 p-4 rounded-lg border bg-white",
+                  "flex items-start gap-3 p-4 rounded-lg border bg-white cursor-pointer hover:shadow-sm hover:border-gray-300 transition-all",
                   task.status === "done" && "opacity-60"
                 )}
+                onClick={() => openEditTask(task)}
               >
                 <button
-                  onClick={() =>
-                    handleStatusChange(
-                      task,
-                      task.status === "done" ? "todo" : "done"
-                    )
-                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStatusChange(task, task.status === "done" ? "todo" : "done");
+                  }}
                   className="mt-0.5 shrink-0"
                 >
                   <StatusIcon
@@ -199,7 +232,7 @@ export function TasksClient({ initialTasks, currentUserId }: TasksClientProps) {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <Select
                     value={task.status}
                     onValueChange={(v) => handleStatusChange(task, v as any)}
@@ -218,7 +251,7 @@ export function TasksClient({ initialTasks, currentUserId }: TasksClientProps) {
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7 text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(task.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -234,6 +267,74 @@ export function TasksClient({ initialTasks, currentUserId }: TasksClientProps) {
           )}
         </div>
       </div>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editingTask} onOpenChange={(o) => !o && setEditingTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+            <div>
+              <Label>Title *</Label>
+              <Input {...editForm.register("title")} placeholder="Task title" />
+              {editForm.formState.errors.title && (
+                <p className="text-xs text-destructive mt-1">
+                  {editForm.formState.errors.title.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea {...editForm.register("description")} rows={2} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Priority</Label>
+                <Select
+                  value={editForm.watch("priority")}
+                  onValueChange={(v) => editForm.setValue("priority", v as any)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Due Date</Label>
+                <Input {...editForm.register("dueDate")} type="date" />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={editForm.watch("status")}
+                  onValueChange={(v) => editForm.setValue("status", v as any)}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingTask(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editLoading}>
+                {editLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showForm} onOpenChange={(o) => !o && setShowForm(false)}>
         <DialogContent>
