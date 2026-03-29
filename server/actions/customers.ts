@@ -113,3 +113,113 @@ export async function createInteraction(
     return { error: "Failed to log interaction" };
   }
 }
+
+export interface BulkImportRow {
+  companyName: string;
+  propertyName?: string;
+  primaryContactName?: string;
+  primaryContactEmail?: string;
+  primaryContactPhone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  industry?: string;
+  monthlyValue?: number | null;
+  status?: string;
+  notes?: string;
+  brand?: string;
+  stage?: string;
+}
+
+const VALID_STATUSES = ["lead", "prospect", "active", "at-risk", "churned"] as const;
+const VALID_BRANDS = ["rbm-services", "double-take", "five-star"] as const;
+const VALID_STAGES = [
+  "new-lead",
+  "contacted",
+  "qualified",
+  "proposal-sent",
+  "negotiating",
+  "closed-won",
+  "closed-lost",
+] as const;
+
+export async function bulkImportCustomers(rows: BulkImportRow[]) {
+  let created = 0;
+  let updated = 0;
+  const errors: string[] = [];
+
+  // Load all existing customers once for duplicate detection
+  const existing = await db
+    .select({ id: customers.id, companyName: customers.companyName })
+    .from(customers);
+
+  const existingMap = new Map(
+    existing.map((c) => [c.companyName.toLowerCase().trim(), c.id])
+  );
+
+  for (const row of rows) {
+    try {
+      const companyKey = row.companyName.toLowerCase().trim();
+
+      // Build notes: prepend property name if supplied
+      let notes = row.notes ?? "";
+      if (row.propertyName) {
+        notes = `Property: ${row.propertyName}${notes ? "\n" + notes : ""}`;
+      }
+
+      const brand = VALID_BRANDS.includes(row.brand as any)
+        ? (row.brand as typeof VALID_BRANDS[number])
+        : "rbm-services";
+
+      const status = VALID_STATUSES.includes(row.status as any)
+        ? (row.status as typeof VALID_STATUSES[number])
+        : "lead";
+
+      const stage = VALID_STAGES.includes(row.stage as any)
+        ? (row.stage as typeof VALID_STAGES[number])
+        : null;
+
+      const data = {
+        brand,
+        companyName: row.companyName,
+        status,
+        stage,
+        industry: row.industry || null,
+        address: row.address || null,
+        city: row.city || null,
+        state: row.state || null,
+        zip: row.zip || null,
+        primaryContactName: row.primaryContactName || null,
+        primaryContactEmail: row.primaryContactEmail || null,
+        primaryContactPhone: row.primaryContactPhone || null,
+        monthlyValue: row.monthlyValue != null ? String(row.monthlyValue) : null,
+        notes: notes || null,
+      };
+
+      const existingId = existingMap.get(companyKey);
+
+      if (existingId) {
+        await db
+          .update(customers)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(customers.id, existingId));
+        updated++;
+      } else {
+        await db.insert(customers).values(data);
+        created++;
+        // Add to map so subsequent rows with same name are treated as updates
+        existingMap.set(companyKey, "pending");
+      }
+    } catch (err) {
+      errors.push(
+        `"${row.companyName}": ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+    }
+  }
+
+  revalidatePath("/customers");
+  revalidatePath("/sales");
+
+  return { created, updated, errors };
+}

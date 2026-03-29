@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Plus, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
   getRiskColor,
 } from "@/lib/utils";
 import { CustomerFormDialog } from "./customer-form-dialog";
+import { BulkImportDialog } from "./bulk-import-dialog";
 
 interface CustomersClientProps {
   initialCustomers: Customer[];
@@ -36,6 +37,7 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [brandFilter, setBrandFilter] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const filtered = initialCustomers.filter((c) => {
     const matchSearch =
@@ -85,6 +87,10 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
             <SelectItem value="five-star">Five Star</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={() => setShowImport(true)}>
+          <Upload className="h-4 w-4 mr-2" />
+          Bulk Import CSV
+        </Button>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Customer
@@ -180,6 +186,10 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
           setShowForm(false);
           router.refresh();
         }}
+      />
+      <BulkImportDialog
+        open={showImport}
+        onClose={() => setShowImport(false)}
       />
     </div>
   );
