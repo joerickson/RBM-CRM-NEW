@@ -110,7 +110,7 @@ export function TasksClient({ initialTasks, currentUserId }: TasksClientProps) {
       description: task.description ?? "",
       priority: task.priority,
       status: task.status,
-      dueDate: task.dueDate ?? "",
+      dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split("T")[0] : task.dueDate ?? "",
     });
   };
 
