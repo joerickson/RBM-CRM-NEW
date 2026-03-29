@@ -87,7 +87,7 @@ export async function getAtRiskCustomers(thresholdDays = 90) {
     LIMIT 10
   `);
 
-  return result.rows as Array<{
+  return result as unknown as Array<{
     id: string;
     company_name: string;
     status: string;

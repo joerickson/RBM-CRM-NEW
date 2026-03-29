@@ -62,7 +62,7 @@ export async function getAtRiskByVisits(thresholdDays = 90) {
     LIMIT 20
   `);
 
-  return result.rows as Array<{
+  return result as unknown as Array<{
     id: string;
     company_name: string;
     status: string;
