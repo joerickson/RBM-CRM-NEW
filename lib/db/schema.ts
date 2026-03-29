@@ -533,6 +533,23 @@ export const notifications = pgTable(
   })
 );
 
+// ─── Pending Invitations ─────────────────────────────────────────────────────
+
+export const pendingInvitations = pgTable("pending_invitations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  role: text("role").notNull(),
+  token: text("token").notNull().unique(),
+  invitedById: uuid("invited_by_id").references(() => profiles.id, {
+    onDelete: "set null",
+  }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const profilesRelations = relations(profiles, ({ many }) => ({
