@@ -160,14 +160,14 @@ export function CustomerFormDialog({
             <div>
               <Label>Sales Stage</Label>
               <Select
-                value={form.watch("stage") ?? ""}
-                onValueChange={(v) => form.setValue("stage", v as any || null)}
+                value={form.watch("stage") || "none"}
+                onValueChange={(v) => form.setValue("stage", v === "none" ? null : v as any)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="new-lead">New Lead</SelectItem>
                   <SelectItem value="contacted">Contacted</SelectItem>
                   <SelectItem value="qualified">Qualified</SelectItem>
@@ -183,14 +183,14 @@ export function CustomerFormDialog({
               <Label>Industry</Label>
               {industries.length > 0 ? (
                 <Select
-                  value={form.watch("industry") ?? ""}
-                  onValueChange={(v) => form.setValue("industry" as any, v || null)}
+                  value={form.watch("industry") || "none"}
+                  onValueChange={(v) => form.setValue("industry" as any, v === "none" ? null : v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select industry" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Not set</SelectItem>
+                    <SelectItem value="none">Not set</SelectItem>
                     {industries.map((ind) => (
                       <SelectItem key={ind.id} value={ind.name}>
                         {ind.name}
@@ -247,14 +247,14 @@ export function CustomerFormDialog({
             <div>
               <Label>Visit Frequency</Label>
               <Select
-                value={form.watch("visitFrequency") ?? ""}
-                onValueChange={(v) => form.setValue("visitFrequency" as any, v || null)}
+                value={form.watch("visitFrequency") || "none"}
+                onValueChange={(v) => form.setValue("visitFrequency" as any, v === "none" ? null : v)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Not set</SelectItem>
+                  <SelectItem value="none">Not set</SelectItem>
                   {visitFrequencies.length > 0 ? (
                     visitFrequencies.map((vf) => (
                       <SelectItem key={vf.id} value={vf.name}>
