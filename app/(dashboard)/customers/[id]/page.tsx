@@ -15,6 +15,7 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { getSalesRepProfiles, getOpsManagerProfiles } from "@/server/queries/profiles";
 
 export default async function CustomerDetailPage({
   params,
@@ -24,13 +25,15 @@ export default async function CustomerDetailPage({
   const { id } = await params;
   const { userId } = await auth();
 
-  const [customer, allEvents, interactionTypesList, customerStatusesList, industriesList, visitFrequenciesList] = await Promise.all([
+  const [customer, allEvents, interactionTypesList, customerStatusesList, industriesList, visitFrequenciesList, salesRepsList, opsManagersList] = await Promise.all([
     getCustomerById(id),
     getAllEvents(),
     getAllInteractionTypes(),
     getAllCustomerStatuses(),
     getAllIndustries(),
     getAllVisitFrequencies(),
+    getSalesRepProfiles(),
+    getOpsManagerProfiles(),
   ]);
 
   if (!customer) notFound();
@@ -60,6 +63,8 @@ export default async function CustomerDetailPage({
         customerStatuses={customerStatusesList as any}
         industries={industriesList as any}
         visitFrequencies={visitFrequenciesList as any}
+        salesReps={salesRepsList}
+        opsManagers={opsManagersList}
       />
     </div>
   );

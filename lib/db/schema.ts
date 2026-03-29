@@ -144,6 +144,7 @@ export const customers = pgTable(
       onDelete: "set null",
     }),
     assignedSalesRepClerkId: text("assigned_sales_rep_clerk_id"),
+    assignedOperationsManagerClerkId: text("assigned_operations_manager_clerk_id"),
     monthlyValue: decimal("monthly_value", { precision: 10, scale: 2 }),
     contractStartDate: date("contract_start_date"),
     contractEndDate: date("contract_end_date"),
