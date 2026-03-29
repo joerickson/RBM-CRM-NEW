@@ -74,7 +74,15 @@ export async function getLeadsForSales() {
 
 export async function getKanbanCustomers() {
   return db.query.customers.findMany({
-    where: (c, { isNotNull }) => isNotNull(c.stage),
+    where: (c, { isNotNull, or, eq }) =>
+      or(
+        isNotNull(c.stage),
+        eq(c.status, "lead"),
+        eq(c.status, "prospect"),
+        eq(c.status, "active"),
+        eq(c.status, "at-risk"),
+        eq(c.status, "churned")
+      ),
     with: { assignedRep: true },
     orderBy: [desc(customers.updatedAt)],
   });
